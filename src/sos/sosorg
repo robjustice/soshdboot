@@ -1,0 +1,59 @@
+;***************************************************************************************************
+;  SOS KERNEL MODULE ORIGINS
+ORGLODR     =     $1E00              ; ORIGIN OF SOS LOADER
+ORGINIT     =     $28F8              ; ORIGIN OF INIT
+ORGGLOB     =     $18FC              ; ORIGIN OF SYSGLOB
+ORGBFMI     =     $B800              ; ORIGIN OF BFM.INIT2 & BITMAPS
+ORGBFM      =     $BC00              ; ORIGIN OF BFM
+ORGPATCH    =     $DE66              ; ORIGIN OF PATCH AREA
+ORGOMSG     =     $DE66              ; ORIGIN OF OPRMSG
+ORGIPL      =     $DFC0              ; ORIGIN OF IPL
+ORGUMGR     =     $E48B              ; ORIGIN OF UMGR
+ORGDISK3    =     $E899              ; ORIGIN OF DISK3
+ORGSERR     =     $EE04              ; ORIGIN OF SYSERR
+ORGDMGR     =     $EED9              ; ORIGIN OF DEVMGR
+ORGSCMGR    =     $F05E              ; ORIGIN OF SCMGR
+ORGFMGR     =     $F2F4              ; ORIGIN OF FMGR
+ORGCFM      =     $F355              ; ORIGIN OF CFMGR
+ORGBUFMG    =     $F552              ; ORIGIN OF BUFMGR
+ORGMEMMG    =     $F86E              ; ORIGIN OF MEMMGR
+ORGEND      =     $FFBF              ; END MARKER
+;***************************************************************************************************
+;  LENGTH OF SOS MODULES  -- THIS MUST AGREE WITH ZZLEN FOR EACH MODULE
+LENLODR     =     ORGINIT-ORGLODR    ; LENGTH OF SOS LOADER
+LENINIT     =     $01B2              ; LENGTH OF INIT
+LENBFMI     =     ORGBFM-ORGBFMI     ; LENGTH OF BFM.INIT2 & BITMAPS
+LENBFM      =     ORGPATCH-ORGBFM    ; LENGTH OF BFM
+LENPATCH    =     ORGOMSG-ORGPATCH   ; LENGTH OF PATCH AREA
+LENOMSG     =     ORGIPL-ORGOMSG     ; LENGTH OF OPRMSG
+LENIPL      =     ORGUMGR-ORGIPL     ; LENGTH OF IPL
+LENUMGR     =     ORGDISK3-ORGUMGR   ; LENGTH OF UMGR
+LENDISK3    =     ORGSERR-ORGDISK3   ; LENGTH OF DISK3
+LENSERR     =     ORGDMGR-ORGSERR    ; LENGTH OF SYSERR
+LENDMGR     =     ORGSCMGR-ORGDMGR   ; LENGTH OF DEVMGR
+LENSCMGR    =     ORGFMGR-ORGSCMGR   ; LENGTH OF SCMGR
+LENFMGR     =     ORGCFM-ORGFMGR     ; LENGTH OF FMGR
+LENCFM      =     ORGBUFMG-ORGCFM    ; ORIGIN OF CFMGR
+LENBUFMG    =     ORGMEMMG-ORGBUFMG  ; LENGTH OF BUFMGR
+LENMEMMG    =     ORGEND-ORGMEMMG    ; LENGTH OF MEMMGR
+;***************************************************************************************************
+;      SOS BLOAD ADDRESSES
+BLALODR     =     $2000              ; BLOAD ADDRESS OF SOS LOADER
+BLAINIT     =     BLALODR+LENLODR    ; BLOAD ADDRESS OF INIT
+BLAGLOB     =     $2CF8              ; BLOAD ADDRESS OF SYSGLOB
+BLABFMI     =     $2E00              ; BLOAD ADDRESS OF BFM.INIT2 & BITMAPS
+BLABFM      =     $3200              ; BLOAD ADDRESS OF BFM
+BLAPATCH    =     BLABFM+LENBFM      ; BLOAD ADDRESS OF PATCH AREA
+BLAOMSG     =     BLAPATCH+LENPATCH  ; BLOAD ADDRESS OF OPRMSG
+BLAIPL      =     BLAOMSG+LENOMSG    ; BLOAD ADDRESS OF IPL
+BLAUMGR     =     BLAIPL+LENIPL      ; BLOAD ADDRESS OF UMGR
+BLADISK3    =     BLAUMGR+LENUMGR    ; BLOAD ADDRESS OF DISK3
+BLASERR     =     BLADISK3+LENDISK3  ; BLOAD ADDRESS OF SYSERR
+BLADMGR     =     BLASERR+LENSERR    ; BLOAD ADDRESS OF DEVMGR
+BLASCMGR    =     BLADMGR+LENDMGR    ; BLOAD ADDRESS OF SCMGR
+BLAFMGR     =     BLASCMGR+LENSCMGR  ; BLOAD ADDRESS OF FMGR
+BLACFM      =     BLAFMGR+LENFMGR    ; BLOAD ADDRESS OF CFMGR
+BLABUFMG    =     BLACFM+LENCFM      ; BLOAD ADDRESS OF BUFMGR
+BLAMEMMG    =     BLABUFMG+LENBUFMG  ; BLOAD ADDRESS OF MEMMGR
+;***************************************************************************************************
+
