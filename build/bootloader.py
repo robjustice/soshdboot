@@ -16,7 +16,7 @@ parser.add_argument("bootloader", help="Boot Loader bin filename")
 parser.add_argument("diskimage", help="Disk Image filename to update")
 args = parser.parse_args()
 
-ext = os.path.splitext(args.bootloader)
+ext = os.path.splitext(args.diskimage)
 format = ext[1]
 
 with open(args.bootloader, 'rb') as bf:
@@ -34,7 +34,7 @@ with open(args.bootloader, 'rb') as bf:
                 df.seek(14*256)
                 df.write(bootloader[256:511])                
 
-    elif len(bootloader) > 1024:  #two block boot loader (needs to be truncated)
+    elif len(bootloader) > 1024:  #two block boot loader (binary needs to be truncated)
         with open(args.diskimage, 'r+b') as df:
             df.seek(0)
             df.write(bootloader[0:1023])

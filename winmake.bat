@@ -17,6 +17,8 @@ SET BOOTLOADER=build\bootloader.py
 
 SET PYTHON=C:\python27\python.exe
 
+SET BOOTDISK=disks\soshdboot.dsk
+SET BOOTTDMDISK=disks\soshdboot_tdm.dsk
 SET DISK=disks\sos_selector_hd.po
 SET TDMDISK=disks\sos_selector_tdm_hd.po
 SET PLDISK=disks\plasma_hd.po
@@ -147,10 +149,10 @@ rem Assemble Boot Loaders
 %LD65% obj/boot/bootloader_prodos_sos.o -o bin/bootloader_2blk.bin -C build/apple3bs.cfg
 %CA65% src/boot/bootloader_prodos_sos_tdm.s -l lst/boot/bootloader_prodos_sos_tdm.lst -o obj/boot/bootloader_prodos_sos_tdm.o
 %LD65% obj/boot/bootloader_prodos_sos_tdm.o -o bin/bootloader_tdm_2blk.bin -C build/apple3bs.cfg
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_1blk.bin disks/soshdboot.dsk
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_tdm_1blk.bin disks/soshdboot_tdm.dsk
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_2blk.bin %DISK%
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_tdm_2blk.bin %TDMDISK%
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_2blk.bin %PLDISK%
+1>nul %PYTHON% %BOOTLOADER% bin\bootloader_1blk.bin %BOOTDISK%
+1>nul %PYTHON% %BOOTLOADER% bin\bootloader_tdm_1blk.bin %BOOTTDMDISK%
+1>nul %PYTHON% %BOOTLOADER% bin\bootloader_2blk.bin %DISK%
+1>nul %PYTHON% %BOOTLOADER% bin\bootloader_tdm_2blk.bin %TDMDISK%
+1>nul %PYTHON% %BOOTLOADER% bin\bootloader_2blk.bin %PLDISK%
 goto :EOF
 
