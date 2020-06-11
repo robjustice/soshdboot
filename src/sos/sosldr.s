@@ -2244,7 +2244,7 @@ D_KYBD        =          D_CHRSET+$10+$400
 ;LST ON
 ZZEND         =          *+$200
 ZZLEN         =          ZZEND-ZZORG-$200
-              ;.IF        ZZLEN-LENLODR
-              ;.FATAL     "SOSORG FILE IS INCORRECT FOR SOS LOADER"
-              ;.ENDIF
+              .IF        ZZLEN-LENLODR
+              .FATAL     "SOSORG FILE IS INCORRECT FOR SOS LOADER"
+              .ENDIF
 

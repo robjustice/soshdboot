@@ -6,7 +6,7 @@
 ;           and load block 0 from that, fallback to floppy if no
 ;           card found
 ; - Bypass rom check
-; - Add test for shift key pressed:
+; - Add test for any key pressed:
 ;    not pressed = boot unit0
 ;    pressed     = boot unit1
 ;

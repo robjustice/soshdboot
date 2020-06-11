@@ -3,7 +3,7 @@
 ;  This version fits in one block for use as a 'boot' floppy
 ;  allowing the soshdboot to work without the rom
 ;
-;  - Add test for shift key pressed:
+;  - Add test for any key pressed:
 ;      not pressed = boot unit0
 ;      pressed     = boot unit1
 ;
@@ -223,7 +223,7 @@ nomatch:        dec          ptr+1               ; else try next slot
                 and          #$07
                 bne          checknext           ; check next slot
                                      ; else, error, card not found
-                jmp rd_err
+                jmp          rd_err
            
            
 sigmatch:       sta          dent                ; Set card driver entry low byte
@@ -237,8 +237,8 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
 
                 tax
                 lda          keybd
-                and          #$02                ;test for shift key pressed
-                bne          unit0               ;no, boot unit0
+                and          #$01                ;test for any key pressed
+                beq          unit0               ;no, boot unit0
                 txa
                 ora          #$80                ;yes, boot unit1
                 sta          unit
@@ -397,7 +397,7 @@ data010:        inc          temp
                 lda          k_xblk+$100,x
                 sta          blok+1
 
-                lda          blok                    ; is next block address = 0 ?
+                lda          blok                      ; is next block address = 0 ?
                 bne          data020
                 lda          blok+1
                 beq          entry_a3                  ; yes, stop reading
@@ -449,7 +449,7 @@ entry_a3:       clc                                    ; sosldr:=k.hdr.cnt+(k.hd
 
 read_blk        =            *
                 lda          #1
-                sta          dcmd                     ;read
+                sta          dcmd                      ;read
                 jsr          blockio
                 bcs          rd_err
                 rts                                    ; normal exit

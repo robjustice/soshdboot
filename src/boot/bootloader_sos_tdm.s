@@ -5,7 +5,7 @@
 ;
 ;  - desktopmanager version, load sos one bank lower than highest
 ;
-;  - Add test for shift key pressed:
+;  - Add test for any key pressed:
 ;      not pressed = boot unit0
 ;      pressed     = boot unit1
 ;
@@ -226,7 +226,7 @@ nomatch:        dec          ptr+1               ; else try next slot
                 and          #$07
                 bne          checknext           ; check next slot
                                      ; else, error, cord not found
-                jmp rd_err
+                jmp          rd_err
 
 
 sigmatch:       sta          dent                ; Set card driver entry low byte
@@ -240,8 +240,8 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
 
                 tax
                 lda          keybd
-                and          #$02                ;test for shift key pressed
-                bne          unit0               ;no, boot unit0
+                and          #$01                ;test for any key pressed
+                beq          unit0               ;no, boot unit0
                 txa
                 ora          #$80                ;yes, boot unit1
                 sta          unit
