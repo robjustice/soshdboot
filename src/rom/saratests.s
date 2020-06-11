@@ -1,11 +1,14 @@
-; Update rom for hard disk booting
-; - Removed user entry RAM test to free up some space
+; Update rom diagnostics for hard disk booting
+; - Removed User entry RAM test to free up some space
 ; - Add test for Alpha lock key down to choose boot:
 ;    down = do normal floppy boot
 ;    up   = do hard diskboot first, search for prodos block mode card
 ;           and load block 0 from that, fallback to floppy if no
 ;           card found
 ; - Bypass rom check
+; - Add test for shift key pressed:
+;    not pressed = boot unit0
+;    pressed     = boot unit1
 ;
 ; Updates by Robert Justice
 
@@ -343,20 +346,20 @@ KEYPLUG:   LDA     KEYBD        ; IS KYBD PLUGGED IN?
            BPL     SEX          ; PRESENT?) NO, BRANCH
            LDA     SYSD1        ; IS ERROR FLAG SET?
            BMI     SEX          ; ERROR HANG
-;                                
-; RECONFIGURE THE SYSTEM                
-;                                
+;
+; RECONFIGURE THE SYSTEM
+;
 RECON:     LDA     #$77         ; TURN ON SCREEN
-           STA     SYSD1          
+           STA     SYSD1
            JSR     CLDSTRT      ; INITIALIZE MONITOR AND DEFAULT CHARACTER SET
            BIT     KBDSTRB      ; CLEAR KEYBOARD
            LDA     EXPROM       ; DISABLE ALL SLOTS
-RETRY:     LDA     $C020          
+RETRY:     LDA     $C020
            LDA     #$08         ; TEST FOR "ALPHA LOCK"
            AND     KEYBD
-           BEQ     BOOT         ; YES, DO FLOPPY BOOT           
+           BEQ     BOOT         ; YES, DO FLOPPY BOOT
            LDA     #$10         ; TEST FOR "APPLE 1"
-           AND     KEYBD          
+           AND     KEYBD
            BNE     HDBOOT       ; NO, DO HARD DISK BOOT FIRST
            JSR     MONITOR      ; AND NEVER COME BACK
 ;
@@ -367,13 +370,12 @@ SEX:       JMP     SEX
 
 Signature: .byte $FF, $20, $FF, $00    ; Disk card signature for disk controller
            .byte $FF, $03
-
 ;
 ; Hard disk boot
 ;
 HDBOOT:    lda     #ScanStart          ; load starting scan slot (Cs)
            sta     PTRHI
-           lda     #$00                
+           lda     #$00
            sta     PTRLO
 
 CheckNext: ldy     #$05                ; We check all 3 sig bytes, starting from last
@@ -425,7 +427,13 @@ Match:     sta     p_dent              ; Set card driver entry low byte
            asl
            asl
            sta     p_unit
-           ldx     #0                  ;block 0
+           lda     KEYBD
+           and     #$01                ;test for any key pressed
+           beq     unit0               ;no, boot unit 0
+           lda     p_unit
+           ora     #$80                ;yes, boot unit 1
+           sta     p_unit
+unit0:     ldx     #0                  ;block 0
            stx     p_blknum
            stx     p_blknum+1
            stx     p_ibbufp            ;load into $A000

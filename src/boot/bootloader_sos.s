@@ -3,6 +3,10 @@
 ;  This version fits in one block for use as a 'boot' floppy
 ;  allowing the soshdboot to work without the rom
 ;
+;  - Add test for shift key pressed:
+;      not pressed = boot unit0
+;      pressed     = boot unit1
+;
 ;  By Robert Justice
 ;  
 ;
@@ -56,6 +60,7 @@
 ;*
 e_reg           =            $ffdf
 b_reg           =            $ffef
+keybd           =            $c008
 kybdstrb        =            $c010
 
 
@@ -107,7 +112,7 @@ bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
                 jmp          boot+runbase-asmbase
-                .byte        "SOSHDBOOT 1BLK.1"    ; sos boot identification "stamp"
+                .byte        "SOSHDBOOT"        ; sos boot identification "stamp"
 
 ;*******************************************************************
 ;*
@@ -116,7 +121,7 @@ runbase         =            $a000                     ;execution base address
 ;*******************************************************************
 
 namlen:         .byte        10
-name:           .byte        "SOS.KERNEL     "
+name:           .byte        "SOS.KERNEL"
 name2:          .byte        "SOS KRNL"
 name2_len       =            *-name2
 ;
@@ -147,7 +152,6 @@ signature:      .byte        $FF, $20, $FF, $00    ; Disk card signature for dis
 ;*****************************************************************
 ;
 ; turn off interrupts & decimal mode
-;  Assume with new boot rom that the device entry point and unit are set
 ;
 boot:           sei
                 cld
@@ -212,25 +216,34 @@ chk2:           lda          (ptr),y
                 beq          nomatch             ; if $00, is a disk ii 16 sector device, error
                 cmp          #$ff
                 bne          sigmatch            ; if its not $ff (disk ii 13 sector device)
-                                       ; then we found an intelligent disk controller :-)
+                                          ; then we found an intelligent disk controller :-)
 
 nomatch:        dec          ptr+1               ; else try next slot
                 lda          ptr+1
                 and          #$07
                 bne          checknext           ; check next slot
-                                     ; else, error, cord not found
+                                     ; else, error, card not found
                 jmp rd_err
            
            
 sigmatch:       sta          dent                ; Set card driver entry low byte
                 lda          ptr+1
-                sta          dent+1            ; Set card driver entry high byte
+                sta          dent+1              ; Set card driver entry high byte
                 asl
                 asl
                 asl
                 asl
                 sta          unit
-                lda          #1
+
+                tax
+                lda          keybd
+                and          #$02                ;test for shift key pressed
+                bne          unit0               ;no, boot unit0
+                txa
+                ora          #$80                ;yes, boot unit1
+                sta          unit
+
+unit0:          lda          #1
                 sta          blok
                 lda          #0
                 sta          blok+1

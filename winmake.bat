@@ -19,6 +19,8 @@ SET PYTHON=C:\python27\python.exe
 
 SET DISK=disks\sos_selector_hd.po
 SET TDMDISK=disks\sos_selector_tdm_hd.po
+SET PLDISK=disks\plasma_hd.po
+
 
 if "%1" equ "sos" (
 call :md
@@ -102,6 +104,8 @@ java -jar %AC% -d %DISK% SOS.KERNEL
 java -jar %AC% -p %DISK% SOS.KERNEL SOS $0000 < bin/SOS.KERNEL#0C0000
 java -jar %AC% -d %TDMDISK% SOS.KERNEL
 java -jar %AC% -p %TDMDISK% SOS.KERNEL SOS $0000 < bin/SOS.KERNEL#0C0000
+java -jar %AC% -d %PLDISK% SOS.KERNEL
+java -jar %AC% -p %PLDISK% SOS.KERNEL SOS $0000 < bin/SOS.KERNEL#0C0000
 rem echo off
 goto :EOF
 
@@ -125,7 +129,13 @@ java -jar %AC% -g %TDMDISK% SOS.DRIVER > bin/SOS.DRIVER_TDM#0c0000
 1>nul %PYTHON% %A3DUTIL% update obj/disk3/disk3.o65 bin/SOS.DRIVER_TDM#0C0000
 java -jar %AC% -d %TDMDISK% SOS.DRIVER
 java -jar %AC% -p %TDMDISK% SOS.DRIVER SOS $0000 < bin/SOS.DRIVER_TDM#0C0000
+java -jar %AC% -g %PLDISK% SOS.DRIVER > bin/SOS.DRIVER_PL#0c0000
+1>nul %PYTHON% %A3DUTIL% update obj/disk3/disk3.o65 bin/SOS.DRIVER_PL#0C0000
+java -jar %AC% -d %PLDISK% SOS.DRIVER
+java -jar %AC% -p %PLDISK% SOS.DRIVER SOS $0000 < bin/SOS.DRIVER_PL#0C0000
 goto :EOF
+
+PLASMADISK
 
 rem Assemble Boot Loaders
 :boot
@@ -139,7 +149,8 @@ rem Assemble Boot Loaders
 %LD65% obj/boot/bootloader_prodos_sos_tdm.o -o bin/bootloader_tdm_2blk.bin -C build/apple3bs.cfg
 1>nul %PYTHON% %BOOTLOADER% bin/bootloader_1blk.bin disks/soshdboot.dsk
 1>nul %PYTHON% %BOOTLOADER% bin/bootloader_tdm_1blk.bin disks/soshdboot_tdm.dsk
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_2blk.bin disks/sos_selector_hd.po
-1>nul %PYTHON% %BOOTLOADER% bin/bootloader_tdm_2blk.bin disks/sos_selector_tdm_hd.po
+1>nul %PYTHON% %BOOTLOADER% bin/bootloader_2blk.bin %DISK%
+1>nul %PYTHON% %BOOTLOADER% bin/bootloader_tdm_2blk.bin %TDMDISK%
+1>nul %PYTHON% %BOOTLOADER% bin/bootloader_2blk.bin %PLDISK%
 goto :EOF
 

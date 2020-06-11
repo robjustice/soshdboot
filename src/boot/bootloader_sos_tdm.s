@@ -5,6 +5,10 @@
 ;
 ;  - desktopmanager version, load sos one bank lower than highest
 ;
+;  - Add test for shift key pressed:
+;      not pressed = boot unit0
+;      pressed     = boot unit1
+;
 ;  By Robert Justice
 ;  
 ;
@@ -58,6 +62,7 @@
 ;*
 e_reg           =            $ffdf
 b_reg           =            $ffef
+keybd           =            $c008
 kybdstrb        =            $c010
 
 
@@ -109,7 +114,7 @@ bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
                 jmp          boot+runbase-asmbase
-                .byte        "SOSHDBOOT TDM 1BLK.1"    ; sos boot identification "stamp"
+                .byte        "SOSHDBOOT TDM"    ; sos boot identification "stamp"
 
 ;*******************************************************************
 ;*
@@ -118,7 +123,7 @@ runbase         =            $a000                     ;execution base address
 ;*******************************************************************
 
 namlen:         .byte        10
-name:           .byte        "SOS.KERNEL     "
+name:           .byte        "SOS.KERNEL"
 name2:          .byte        "SOS KRNL"
 name2_len       =            *-name2
 ;
@@ -222,8 +227,8 @@ nomatch:        dec          ptr+1               ; else try next slot
                 bne          checknext           ; check next slot
                                      ; else, error, cord not found
                 jmp rd_err
-           
-           
+
+
 sigmatch:       sta          dent                ; Set card driver entry low byte
                 lda          ptr+1
                 sta          dent+1            ; Set card driver entry high byte
@@ -232,7 +237,16 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
                 asl
                 asl
                 sta          unit
-                lda          #1
+
+                tax
+                lda          keybd
+                and          #$02                ;test for shift key pressed
+                bne          unit0               ;no, boot unit0
+                txa
+                ora          #$80                ;yes, boot unit1
+                sta          unit
+
+unit0:          lda          #1
                 sta          blok
                 lda          #0
                 sta          blok+1

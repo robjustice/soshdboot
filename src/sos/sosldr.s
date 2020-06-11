@@ -7,6 +7,12 @@
 ; - BFMINIT2 is not called, this removes the copy protection check from
 ;    SOS to speed things up a little. Assume things on the HD are the unprotected versions
 ;
+; - Add support to boot either unit, .profile or .pb2
+;    addtional paths included that we copy over as required
+;    I_PATH2  ".PB2/SOS.INTERP"
+;    D_PATH2  ".PB2/SOS.DRIVER"
+;    set K_DRIVES to 2, then don't update from driver file
+;
 ; Updates by Robert Justice
 ;
 ; macro to support setting the most significant bit on for ascii strings with EDASM MSB ON
@@ -481,15 +487,24 @@ ZZORG         =          *
 ;***************************************************************************************************
 K_FILE:       .BYTE      "SOS KRNL"
 K_HDR_CNT:    .WORD      LDR_ADR-K_DRIVES
-K_DRIVES:     .BYTE      $1
+K_DRIVES:     .BYTE      $2                             ;update to allow to boot of either unit (drive)
 K_FLAGS:      .BYTE      $0                                          ; RESERVED FOR FUTURE USE 
+
 I_PATH:       .BYTE      $13
               .BYTE      ".PROFILE/SOS.INTERP"
-              .RES       $30-$14
+              .RES       $18-$14
+
+I_PATH2:      .BYTE      $0F
+              .BYTE      ".PB2/SOS.INTERP"
+              .RES       $18-$10
+
 D_PATH:       .BYTE      $13
               .BYTE      ".PROFILE/SOS.DRIVER"
-              .RES       $30-$14
+              .RES       $18-$14
               
+D_PATH2:      .BYTE      $0F
+              .BYTE      ".PB2/SOS.DRIVER"
+              .RES       $18-$10
               
 LDR_ADR:      .WORD      $0
 LDR_CNT:      .WORD      ZZEND-SOSLDR
@@ -566,7 +581,9 @@ DIB_DTYPE     =          4+16+3
 ETEMP         =          ZPAGE+$2E                                   ; ERROR SUBROUTINE
 ; 
 WTEMP         =          ZPAGE+$2F                                   ; WELCOME SUBROUTINE
-;!BITROT: 
+;
+P_UNIT        =          $343                                        ; PRODOS BLOCK INTERFACE UNIT
+                                                                     ; Need to look at page 3xx as Z_REG is updated
 
 ;PAGE
 ;***************************************************************************************************
@@ -886,10 +903,10 @@ LDR010:       LDA        $380,X
 ; INITIALIZE SDT TABLE, KERNEL AND PRINT WELCOME MESSAGE 
 ;
               LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
-                                                    ;for initial boot, sos sets only one drive active (K_DRIVES)
-                                                    ;we'll leave this in
+                                                    ;original sos sets only one drive active (K_DRIVES) for boot
+                                                    ;K_DRIVES is now set to 2 to allow booting of either drive (unit)
               JSR        LINK_INIT                  ;the link_init sets the last DIB link to zero based on the number of drives
-                                                    ;so this sets just DIB1 active
+              JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
               JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        WELCOME                                     ; WELCOME() 
 ;
@@ -1090,7 +1107,8 @@ LDR103:       LDA        #<D_CHRSET                                  ; MOVE(SRC_
 ; RE-INITIALIZE SDT TABLE 
 ;
               LDY        #<(D_DRIVES-D_FILE)                         ; LINK_INIT(A=D_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO) 
-              LDA        (RDBUF_P),Y 
+;              LDA        (RDBUF_P),Y 
+              LDA        K_DRIVES                          ;hardcode it to K_DRIVES (two)
               JSR        LINK_INIT
 ;
               LDA        #0                                          ; DST_P:=0:I_BASE_P/256*256 
@@ -2165,14 +2183,45 @@ GETTIME       =          $63
 DTPARMS:      .BYTE      1
               .WORD      DATETIME
 DATETIME:     .BYTE      "YYYYMMDDWHHMMSSMMM"
+;
+;
+;  SET UNIT TO BOOT FROM BASED ON THE PRODOS UNIT NUMBER THAT LOADED THE KERNEL
+;
+SET_UNIT:     LDA        P_UNIT
+              AND        #$80                 ;Mask of the unit bit
+              BEQ        UNIT0                ;if zero, leave as is and boot from '.PROFILE' (unit0)
+
+              LDY        #$17                 ;else copy over the '.PB2' (unit1) paths for the
+SD_LOOP:      LDA        I_PATH2,Y            ;sos.kernel and sos.driver files
+              STA        I_PATH,Y
+              LDA        D_PATH2,Y
+              STA        D_PATH,Y
+              DEY
+              BPL        SD_LOOP
+              
+              LDA        #4                   ;copy in the device2 default prefix
+              STA        PREFX_PATH
+              LDY        #$3                  ;just the '.PB2' part
+PR_LOOP:      LDA        D_PATH2+1,Y
+              STA        PREFX_PATH+1,Y
+              DEY
+              BPL        PR_LOOP
+              
+UNIT0:        RTS
+
+SU_END        =          *
+SU_LEN        =          SU_END-SET_UNIT
+
 ;PAGE
 ;***************************************************************************************************
 ;
 ; END OF SOSLDR CODE
 ;
 ;***************************************************************************************************
-;SLOP = >$F8-*   ;-*- fix this
-SLOP          =          $50
+
+codeend       = *
+SLOP          = $28f8 - codeend
+;SLOP          =          $50 - SU_LEN + 4  ;need to fix this up a bit better
               .RES       SLOP                                        ; +-----------------------------------+ 
 INITMODULE:                                                          ;.RES $200 ; ! KERNEL'S INIT MODULE RESIDES HERE ! 
 LDREND        =          *+$200                                      ; +-----------------------------------+ 
@@ -2195,8 +2244,7 @@ D_KYBD        =          D_CHRSET+$10+$400
 ;LST ON
 ZZEND         =          *+$200
 ZZLEN         =          ZZEND-ZZORG-$200
-              .IF        ZZLEN-LENLODR
-              .FATAL     "SOSORG FILE IS INCORRECT FOR SOS LOADER"
-              .ENDIF
-
+              ;.IF        ZZLEN-LENLODR
+              ;.FATAL     "SOSORG FILE IS INCORRECT FOR SOS LOADER"
+              ;.ENDIF
 
