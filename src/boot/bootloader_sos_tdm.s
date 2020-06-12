@@ -114,7 +114,7 @@ bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
                 jmp          boot+runbase-asmbase
-                .byte        "SOSHDBOOT TDM"    ; sos boot identification "stamp"
+                .byte        "SOSHDBOOTT"    ; sos boot identification "stamp"
 
 ;*******************************************************************
 ;*
@@ -123,7 +123,7 @@ runbase         =            $a000                     ;execution base address
 ;*******************************************************************
 
 namlen:         .byte        10
-name:           .byte        "SOS.KERNEL"
+name:           .byte        "SOS.KERNEL     "
 name2:          .byte        "SOS KRNL"
 name2_len       =            *-name2
 ;
