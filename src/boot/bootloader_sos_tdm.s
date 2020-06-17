@@ -62,6 +62,7 @@
 ;*
 e_reg           =            $ffdf
 b_reg           =            $ffef
+keyd            =            $c000
 keybd           =            $c008
 kybdstrb        =            $c010
 
@@ -173,9 +174,9 @@ boot:           sei
                 sta          e_reg
                 ldx          #$fb
                 txs
-                bit          kybdstrb                  ; turns off kybd
-                lda          #$40                      ; "rti" instruction
-                sta          $ffca                     ; prevents reboot w/keyboard nmi
+                ;bit          kybdstrb                  ; turns off kybd
+                ;lda          #$40                      ; "rti" instruction
+                ;sta          $ffca                     ; prevents reboot w/keyboard nmi
 ;
 ; find highest memory bank in system and set bank reg to it
 ; - max memsize = 512k. (support OnThree 512k memory card)
@@ -239,9 +240,9 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
                 sta          unit
 
                 tax
-                lda          keybd
-                and          #$01                ;test for any key pressed
-                beq          unit0               ;no, boot unit0
+                bit           keyd               ;test for keyboard data
+                bpl           unit0              ;none, boot unit0
+
                 txa
                 ora          #$80                ;yes, boot unit1
                 sta          unit

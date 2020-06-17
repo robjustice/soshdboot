@@ -60,6 +60,7 @@
 ;*
 e_reg           =            $ffdf
 b_reg           =            $ffef
+keyd            =            $c000
 keybd           =            $c008
 kybdstrb        =            $c010
 
@@ -111,7 +112,7 @@ k_hdr_cnt       =            k_file+8                  ;   "    header       "
 bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
-                jmp          boot+runbase-asmbase
+                jmp          boot
                 .byte        "SOSHDBOOT"        ; sos boot identification "stamp"
 
 ;*******************************************************************
@@ -121,25 +122,14 @@ runbase         =            $a000                     ;execution base address
 ;*******************************************************************
 
 namlen:         .byte        10
-name:           .byte        "SOS.KERNEL     "
+name:           .byte        "SOS.KERNEL"
 name2:          .byte        "SOS KRNL"
 name2_len       =            *-name2
 ;
-; messages
+; messages - trimmed to save space
 ;
-msg             =            *                         ; message table
-
-msg0:           .byte        "BOOT ERROR"
-msg0l           =            *-msg0
-xmsg0:          .byte        *-msg-1
-
-;
-; -- these dw's get around tla's hatred of hibyte/lobyte stuff
-;
-xk_xblk:        .word        k_xblk
-xk_file:        .word        k_file
-xk_hdr_cnt:     .word        k_hdr_cnt+6               ;includes 6-byte offset
-xentry0:        .word        entry0
+msg0:           .byte        "BOOT ERROR  "
+msg0l           =            *-msg0-1
 
 signature:      .byte        $FF, $20, $FF, $00    ; Disk card signature for disk controller
                 .byte        $FF, $03
@@ -170,23 +160,23 @@ boot:           sei
                 sta          e_reg
                 ldx          #$fb
                 txs
-                bit          kybdstrb                  ; turns off kybd
-                lda          #$40                      ; "rti" instruction
-                sta          $ffca                     ; prevents reboot w/keyboard nmi
+                ;bit          kybdstrb                  ; turns off kybd
+                ;lda          #$40                      ; "rti" instruction
+                ;sta          $ffca                     ; prevents reboot w/keyboard nmi
 ;
 ; find highest memory bank in system and set bank reg to it
 ; - max memsize = 512k. (support OnThree 512k memory card)
 ;
-                lda          #$0e                      ; load highest bank for 512k
+                lda          #$0e                ; load highest bank for 512k
                 sta          b_reg
                 sta          $2000
-                lda          #$06                      ; highest bank for 256k
+                lda          #$06                ; highest bank for 256k
                 sta          b_reg
-                sta          $2000                     ; will overwrite bank e value if not 512k
+                sta          $2000               ; will overwrite bank e value if not 512k
                 lda          #$0e
                 sta          b_reg
                 cmp          $2000
-                beq          boot006                   ; yes, its 512k
+                beq          boot006             ; yes, its 512k
                 lsr a
                 sta          b_reg
                 
@@ -222,10 +212,10 @@ nomatch:        dec          ptr+1               ; else try next slot
                 lda          ptr+1
                 and          #$07
                 bne          checknext           ; check next slot
-                                     ; else, error, card not found
-                jmp          rd_err
-           
-           
+
+                lda          #'C'                ; else, error, card not found
+                jmp          prnt_msg
+
 sigmatch:       sta          dent                ; Set card driver entry low byte
                 lda          ptr+1
                 sta          dent+1              ; Set card driver entry high byte
@@ -236,9 +226,9 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
                 sta          unit
 
                 tax
-                lda          keybd
-                and          #$01                ;test for any key pressed
-                beq          unit0               ;no, boot unit0
+                bit           keyd               ;test for keyboard data
+                bpl           unit0              ;none, boot unit0
+
                 txa
                 ora          #$80                ;yes, boot unit1
                 sta          unit
@@ -247,12 +237,11 @@ unit0:          lda          #1
                 sta          blok
                 lda          #0
                 sta          blok+1
-                lda          #0
                 sta          buff
                 lda          #$a2
                 sta          buff+1
 
-                jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
+                jsr          read_blk  ; rest of boot (block 1)
 
                 inc          blok                    ; first root directory block (block 2)
                 lda          #0
@@ -261,7 +250,7 @@ rd_dir:         inc          buff+1
                 inc          buff+1
                 inc          blk_ctr
 
-                jsr          read_blk+runbase-asmbase  ; root directory
+                jsr          read_blk  ; root directory
 
                 ldy          #nextdblk                 ; if nextdir field = 0 then done
                 lda          (buff),y
@@ -280,9 +269,9 @@ rd_dir:         inc          buff+1
 ;
 ; search directory for file 'sos.kernel'
 ;
-                lda          xentry0+runbase-asmbase   ;get lo byte of address
+                lda          #<entry0                   ;get lo byte of address
                 sta          begin
-                lda          xentry0+1+runbase-asmbase
+                lda          #>entry0
                 sta          begin+1
 
 search:         clc                                    ; end:=begin+512-entry.len
@@ -300,12 +289,12 @@ search:         clc                                    ; end:=begin+512-entry.le
 srch020:        ldy          #0                        ; does count match?
                 lda          (begin),y
                 and          #$f
-                cmp          namlen+runbase-asmbase
+                cmp          namlen
                 bne          srch040                   ; no match
 
                 tay
 srch030:        lda          (begin),y                 ; do chars match?
-                cmp          name-1+runbase-asmbase,y
+                cmp          name-1              ,y
                 bne          srch040                   ; no match
                 dey
                 bne          srch030
@@ -318,7 +307,8 @@ srch030:        lda          (begin),y                 ; do chars match?
                 cmp          #rootdir                  ;skip if stg type=rootdir
                 beq          srch040
 
-                jmp          prnt_msg+runbase-asmbase
+                lda          #'D'                ; else, error, dir error?
+                jmp          prnt_msg
 
 srch040:        clc
                 lda          begin
@@ -344,7 +334,8 @@ srch040:        clc
                 dec          blk_ctr
                 bne          search                    ;search the next dir block
 
-                jmp          prnt_msg+runbase-asmbase
+                lda          #'S'                ; else, error, sos.kernel not found
+                jmp          prnt_msg
 
 ;
 ; file entry 'sos.kernel' found
@@ -356,29 +347,30 @@ match:          ldy          #xblk
                 iny
                 lda          (begin),y
                 sta          blok+1
-                lda          xk_xblk+runbase-asmbase   ;get lo byte of address
+                lda          #<k_xblk                  ;get lo byte of address
                 sta          buff
-                lda          xk_xblk+1+runbase-asmbase ;get hi byte of address
+                lda          #>k_xblk                  ;get hi byte of address
                 sta          buff+1
-                jsr          read_blk+runbase-asmbase  ; index block
+                jsr          read_blk                  ; index block
 
-                lda          xk_file+runbase-asmbase   ;get lo byte of address
+                lda          #<k_file                  ;get lo byte of address
                 sta          buff
-                lda          xk_file+1+runbase-asmbase
+                lda          #>k_file
                 sta          buff+1
                 lda          k_xblk
                 sta          blok
                 lda          k_xblk+$100
                 sta          blok+1
-                jsr          read_blk+runbase-asmbase  ; first data block
+                jsr          read_blk                  ; first data block
 ;
 ; check the label, should be 'sos krnl'
 ;
                 ldx          #name2_len-1
 chk010:         lda          k_label,x
-                cmp          name2+runbase-asmbase,x
+                cmp          name2,x
                 beq          chk020
-                jmp          prnt_msg+runbase-asmbase
+                lda          #'B'                ; else, error, bad sos.kernel
+                jmp          prnt_msg
 chk020:         dex
                 bpl          chk010
 ;
@@ -402,16 +394,16 @@ data010:        inc          temp
                 lda          blok+1
                 beq          entry_a3                  ; yes, stop reading
 
-data020:        jsr          read_blk+runbase-asmbase  ; read data block
-                jmp          data010+runbase-asmbase   ;  and repeat
+data020:        jsr          read_blk                  ; read data block
+                jmp          data010                   ;  and repeat
 ;
 ; build sos loader entry point address
 ;
 entry_a3:       clc                                    ; sosldr:=k.hdr.cnt+(k.hdr.cnt)
-                lda          xk_hdr_cnt+runbase-asmbase
+                lda          #<(k_hdr_cnt+6)
                 adc          k_hdr_cnt
                 sta          sosldr
-                lda          xk_hdr_cnt+1+runbase-asmbase
+                lda          #>(k_hdr_cnt+6)
                 adc          k_hdr_cnt+1
                 sta          sosldr+1
 ;
@@ -454,7 +446,8 @@ read_blk        =            *
                 bcs          rd_err
                 rts                                    ; normal exit
 
-rd_err:         jmp          prnt_msg+runbase-asmbase
+rd_err:         lda          #'R'                      ; read error
+                jmp          prnt_msg
                 
 blockio:        jmp          (dent)                    ;device block entry   
 
@@ -462,33 +455,21 @@ blockio:        jmp          (dent)                    ;device block entry
 ;*
 ;* print error message
 ;*
-;* input: msg index  (x)
-;*  msg length (y)
+;* input: error letter (a)
+;*
 ;*******************************************************************
 msgline         =            $5a8                      ; prnt.msg routine
 
-prnt_msg        =            *
-                ldx          xmsg0+runbase-asmbase     ;err, error
+prnt_msg:       sta          msg0+msg0l                ; store the error letter
                 ldy          #msg0l
-                
-                ;sty          temp                      ; center msg (y:=40-len/2+len)
-                ;sec
-                ;lda          #40
-                ;sbc          temp
-                ;lsr          a
-                ;clc
-                ;adc          temp
-                ;tay
 
-prnt010:        lda          msg+runbase-asmbase,x
+prnt010:        lda          msg0,y                    ; copy the message to screen
                 sta          msgline-1+5,y
-                dex
                 dey
-                ;dec          temp
-                bne          prnt010
+                bpl          prnt010
 
                 lda          $c040                     ; sound bell
-                jmp          *+runbase-asmbase         ; hang until reboot (ctrl/reset)
+                jmp          *                         ; hang until reboot (ctrl/reset)
 
 ;****************************************************************
 ;*

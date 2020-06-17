@@ -30,14 +30,14 @@ with open(args.bootloader, 'rb') as bf:
             
             elif format == '.dsk' or format == '.DSK':
                 df.seek(0) 
-                df.write(bootloader[0:255])                
+                df.write(bootloader[0:256])                
                 df.seek(14*256)
-                df.write(bootloader[256:511])                
+                df.write(bootloader[256:512])                
 
     elif len(bootloader) > 1024:  #two block boot loader (binary needs to be truncated)
         with open(args.diskimage, 'r+b') as df:
             df.seek(0)
-            df.write(bootloader[0:1023])
+            df.write(bootloader[0:1024])
     else:
         print "incorrect boot loader size"
         exit(1)
