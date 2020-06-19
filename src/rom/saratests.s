@@ -115,7 +115,7 @@ CHPG       =    *
            .BYTE   $D9          ; Y
 ;
 ; SETUP SYSTEM
-;
+; Entry point from reset
 ;
            LDA     #$52+ROM     ; TURN OFF SCREEN, SET 2MHZ SPEED
            STA     SYSD1        ; AND RUN OFF ROM
@@ -137,10 +137,10 @@ DISK1:     LDA     DISKOFF,Y
            DEY             
            DEY             
            BPL     DISK1        
-           LDA     KEYBD        
-           AND     #04        
-           BNE     NXBYT        
-           JMP     RECON        
+           LDA     KEYBD        ; test for ctrl key pressed
+           AND     #04          
+           BNE     NXBYT        ; if no, do diagnostic tests 
+           JMP     RECON        ; else skip them and go boot
 ;                    
 ; VERIFY ZERO PAGE                
 ;                     
@@ -373,7 +373,10 @@ Signature: .byte $FF, $20, $FF, $00    ; Disk card signature for disk controller
 ;
 ; Hard disk boot
 ;
-HDBOOT:    lda     #ScanStart          ; load starting scan slot (Cs)
+HDBOOT:    lda     SYSD1               ; set 1Mhz for better compatibility
+           ora     #$80                ; with the prodos cards.
+           sta     SYSD1
+           lda     #ScanStart          ; load starting scan slot (Cs)
            sta     PTRHI
            lda     #$00
            sta     PTRLO
