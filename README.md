@@ -28,7 +28,7 @@ The approach that I took, was to replace the sos.kernel internal disk3 driver wi
   
   ## Boot loader
   
-  I ended up providing two different boot loaders, as this would allow the dual boot of ProDOS or SOS.
+  I ended up providing two different boot loaders.
   
   ### Two block boot loader
   This one is a modified version of the ProDOS/SOS two block boot loader. 
@@ -43,15 +43,15 @@ The approach that I took, was to replace the sos.kernel internal disk3 driver wi
   For both of these bootloaders, there is also a Desktop Manager version. This loads things one bank below the highest available, as this is reserved for the Desktop Manager software.
   
   ## SOS.KERNEL
-  Modified SOS.KERNEL file.
-  The internal disk3 driver is replaced with an updated Problock3 driver. Some changes to the code to align with being loaded internally in the kernal. Also some optimisation is possible as the driver is now always in the non bank switched system bank, so need to copy that code to the 18fx page to avoid the bank switching.
-  The path names for the SOS.INTERP and SOS.DRIVER have been updated with the .PROFILE name for the problock driver. Also a second set of names is included to allow booting of the second drive.
-  The default prefix is updated as required.
-  The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not mmuch point having this if we are not booting of floppy.
-  The number of drives is hard coded to two. So the settings of drives via SCP is ignored.
+  Modified SOS.KERNEL:
+  - The internal disk3 driver is replaced with an updated Problock3 driver. Some changes to the code to align with being loaded internally in the kernal. Also some optimisation is possible as the driver is now always in the non bank switched system bank, so need to copy that code to the 18fx page to avoid the bank switching.
+  - The path names for the SOS.INTERP and SOS.DRIVER have been updated with the .PROFILE name for the problock driver. Also a second set of names is included to allow booting of the second drive.
+  - The default prefix is updated as required, depending on the unit that is selected for booting.
+  - The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not mmuch point having this if we are not booting of floppy.
+  - The number of drives is hard coded to two. So the settings of drives via SCP is ignored.
   
   ## Disk3 driver
-  The original internal floppy driver modified to look like a standard sos driver. This is included in the SOS.DRIVER files on the hd po images. Built using ca65 and the a3driverutil.
+  The original internal floppy driver modified to look like a standard sos driver. This is included in the SOS.DRIVER files on the hd po images.
   
 # Disks
 The following disk images are provided prebuilt and ready for use:
@@ -87,14 +87,19 @@ The following disk images are provided prebuilt and ready for use:
 
 # Build
 
-I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks.
-
 The following tools are used and included in the build folder:
 ca65 assembler 
 ld65 linker
 a3driverutil.py
 Applecommander
 bootloader.py
+
+I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks.
+
+Check out the source:
+git clone https://github.com/robjustice/soshdboot
+cd soshdboot
+winmake all
 
 
 ## One more thing..
