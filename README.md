@@ -6,11 +6,11 @@ The result detailed here is an updated ROM and version of SOS that allows bootin
 
 # Standard Apple /// boot
 
-  ## 1. The Apple /// includes only 4k of firmware in rom. This has code to look only to the internal floppy drive for booting. After some diagnostic checks are run, it looks to internal floppy drive and loads the bootloader (block0) into $A000. It then jumps to the code at $A000 to run the bootloader.
+## 1. The Apple /// includes only 4k of firmware in rom. This has code to look only to the internal floppy drive for booting. After some diagnostic checks are run, it looks to internal floppy drive and loads the bootloader (block0) into $A000. It then jumps to the code at $A000 to run the bootloader.
 
-  ## 2. The bootloader then loads in block 1, then block 2 through to the last linked block of the directory to address $A200 onwards. The volume directory is located on the disk starting from block 2, so this then means the directory blocks are in memory from $A400. It searches through these for the 'SOS.KERNEL' filename, and then loads that file into the highest bank determined from its memory test starting at address $1E00. Then the sos loader code is run from $1E70.
+## 2. The bootloader then loads in block 1, then block 2 through to the last linked block of the directory to address $A200 onwards. The volume directory is located on the disk starting from block 2, so this then means the directory blocks are in memory from $A400. It searches through these for the 'SOS.KERNEL' filename, and then loads that file into the highest bank determined from its memory test starting at address $1E00. Then the sos loader code is run from $1E70.
 
-  ## 3. The SOS.KERNEL includes the sosldr code that moves the kernel into the correct memory location in the system bank, and then loads the SOS.DRIVER and SOS.INTERP from the internal floppy. The kernel actually includes in itself a driver for the disk3 that has the same structure as any other driver. This has DIB's for each of the four floppy drives. Once the kernel is loaded, it initialises itself with the first DIB of the internal Disk3 driver and then uses normal SOS system calls to loaded in the SOS.DRIVER and SOS.INTERP files. The paths for these files are hard coded into the kernel, .D1/SOS.INTERP and .D1/SOS.DRIVER. The SOS.INTERP is loaded first and moved into the highest memory bank. The SOS.DRIVER file is loaded next, and each driver is relocated to memory starting from below the interpreter. Once the drivers are relocoated, then the kernel is reinitialses to init all of the drivers. The sosldr then jumps to the start address of the interpreter and runs the application.
+## 3. The SOS.KERNEL includes the sosldr code that moves the kernel into the correct memory location in the system bank, and then loads the SOS.DRIVER and SOS.INTERP from the internal floppy. The kernel actually includes in itself a driver for the disk3 that has the same structure as any other driver. This has DIB's for each of the four floppy drives. Once the kernel is loaded, it initialises itself with the first DIB of the internal Disk3 driver and then uses normal SOS system calls to loaded in the SOS.DRIVER and SOS.INTERP files. The paths for these files are hard coded into the kernel, .D1/SOS.INTERP and .D1/SOS.DRIVER. The SOS.INTERP is loaded first and moved into the highest memory bank. The SOS.DRIVER file is loaded next, and each driver is relocated to memory starting from below the interpreter. Once the drivers are relocoated, then the kernel is reinitialses to init all of the drivers. The sosldr then jumps to the start address of the interpreter and runs the application.
 
 # The new Apple /// boot 
 
@@ -96,13 +96,13 @@ bootloader.py
 I have also added some additional support to the Selector /// image for booting the Titan card emulations. This was not supported with the standard Selector software.
 These are available in the Languages menu. 
   
-    - added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher)
-      this has also had the 2+ rom changed to search the boot slots from S1 to S6
+- added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher). 
+This has also had the 2+ rom changed to search the boot slots from S1 to S6
 
-    - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
-      no save setting supported yet. 
-      Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3
-      Note: for this 3plus2e setup, I have had mixed results when using the Booti card and this combo. When using a CFFA3000, it works fine.
+- added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
+  no save setting supported yet. 
+  Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3
+  Note: for this 3plus2e setup, I have had mixed results when using the Booti card and this combo. When using a CFFA3000, it works fine.
       
 With either of these we can now boot Prodos from the same harddisk image :-)
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
