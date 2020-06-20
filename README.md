@@ -100,15 +100,19 @@ bootloader.py
 # One more thing..
 
 I have also added some additional support to the Selector /// image for booting the Titan card emulations. This was not supported with the standard Selector software.
-These are available in the Languages menu. 
+These are available in the Languages menu on the Selector_hd.po image. 
   
 - added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher). 
+
 This has also had the 2+ rom changed to search the boot slots from S1 to S6
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
   no save setting supported yet. 
+  
   Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3
+  
   Note: for this 3plus2e setup, I have had mixed results when using the Booti card and this combo. When using a CFFA3000, it works fine.
       
 With either of these we can now boot Prodos from the same harddisk image :-)
+
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
