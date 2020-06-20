@@ -59,6 +59,7 @@ The following disk images are provided prebuilt and ready for use:
 - selector_hd.po
 
     The updated bootloader, SOS.KERNEL, SOS.DRIVER, ProDOS 2.4.2 installed
+    
     Selector /// SOS.INTERP loaded on startup
     
     This image is based on the apple3rtr bos image, it needed some adjustments to suit Selector /// 
@@ -73,10 +74,13 @@ The following disk images are provided prebuilt and ready for use:
 - plasma_hd.po
 
    The updated bootloader, SOS.KERNEL, SOS.DRIVER, and ProDOS 2.4.2 installed
+   
    Plasma SOS.INTERP loaded on startup
+   
    Get into that fantastic plasma command line fast!
   
 - soshdboot.dsk
+   
    This is a blank prodos disk with a special 1 block boot loader to load sos from the harddisk.
    this can be used if the rom has not been changed. Still very quick as only one block is read from 
    floppy, the rest is from the harddisk. 
