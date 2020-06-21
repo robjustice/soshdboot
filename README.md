@@ -107,15 +107,14 @@ I have tested the following cards in combination with real Apple /// hardware
 
 # Build
 
-The following tools are used and included in the bin folder:
-ca65 assembler 
-ld65 linker
-a3driverutil.py
-Applecommander
-bootloader.py
+The following tools are used and included in the 'build' folder:
+--ca65 assembler 
+--ld65 linker
+--a3driverutil.py
+--Applecommander
+--bootloader.py
 
-I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks.
-You might need to update the paths in winmake to suit.
+I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit.
 
 ```
 Check out the source:
@@ -123,16 +122,17 @@ git clone https://github.com/robjustice/soshdboot
 cd soshdboot
 winmake all
 ```
-This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update them on all of the disk images. The built ROM image,  SOS.KERNEL, SOS.DRIVER and bootloaders will be placed in the build folder.
+This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update them on all of the disk images. The built ROM image,  SOS.KERNEL, SOS.DRIVER and bootloaders will be placed in the 'out' folder.
 
 ## One more thing..
 
-I have also added some additional support to the Selector /// image for booting the Titan card emulations. This was not supported with the standard Selector software. Apparently Titan would not share the technical details with OnThree.
+I have also added some additional support to the Selector /// image for booting the Titan card emulations. This was not supported with the standard Selector software. Apparently Titan refused to share the technical details with OnThree (thanks for finding that Jorma).
+
 These are available in the Languages menu on the Selector_hd.po image. 
   
-- added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher). 
+- added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher). I have also patched the loaded F8 rom so it can boot of block mode cards. 
 
-This has also had the 2+ rom changed to search the boot slots from S1 to S6
+Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3.
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
   no save setting supported yet. 
@@ -141,6 +141,6 @@ This has also had the 2+ rom changed to search the boot slots from S1 to S6
   
   Note: for this 3plus2e setup, I have had mixed results when using the Booti card and this combo. When using a CFFA3000, it works fine.
       
-With either of these we can now boot Prodos from the same harddisk image :-)
+With either of these we can now boot Prodos from the same harddisk image woutout using the floppy drive :-)
 
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
