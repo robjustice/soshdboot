@@ -63,8 +63,8 @@ This is included in the SOS.DRIVER files on the hd po images.
 
 Note: I have not tested this extensively, so be a little careful with the disks you use.
   
-# Disks
-The following disk images are provided prebuilt and ready for use:
+# Disk images ready to go
+The following disk images are provided prebuilt and ready for use in the disks folder:
 
 - selector_hd.po
 
@@ -112,15 +112,15 @@ I have tested the following cards in combination with real Apple /// hardware
 
 # Build
 
-The following tools are used and included in the 'build' folder:
+The following tools are used (and included) in the 'build' folder:
 
--ca65 assembler 
--ld65 linker
--a3driverutil.py
--Applecommander
--bootloader.py
+- ca65 assembler 
+- ld65 linker
+- a3driverutil.py
+- Applecommander
+- bootloader.py
 
-I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit (sorry I coded in the python path as I was having issues with the different versions, python 2.7 required at the moment).
+I have also included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit (sorry I coded in the python path as I was having issues with the different versions, python 2.7 required at the moment).
 
 ```
 git clone https://github.com/robjustice/soshdboot
@@ -150,3 +150,4 @@ These are available in the Languages menu on the Selector_hd.po image.
 With either of these we can now boot Prodos from the same harddisk image without using the floppy drive :-)
 
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
+
