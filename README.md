@@ -120,10 +120,9 @@ The following tools are used and included in the 'build' folder:
 -Applecommander
 -bootloader.py
 
-I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit.
+I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit (sorry I coded in the python path as I was having issues with the different versions, python 2.7 required at the moment).
 
 ```
-Check out the source:
 git clone https://github.com/robjustice/soshdboot
 cd soshdboot
 winmake all
@@ -142,12 +141,12 @@ These are available in the Languages menu on the Selector_hd.po image.
   Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3.
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
-  no save setting supported yet. 
+  no save setting supported yet. Its a quick put together that just loads everything into the interpreter bank and then moves everything in memory to match the original 3plus2e boot disk.
   
   Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3
   
   Note: for this 3plus2e setup, I have had mixed results when using the Booti card and this combo. When using a CFFA3000, it works fine.
       
-With either of these we can now boot Prodos from the same harddisk image woutout using the floppy drive :-)
+With either of these we can now boot Prodos from the same harddisk image without using the floppy drive :-)
 
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
