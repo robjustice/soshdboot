@@ -113,11 +113,11 @@ I have tested the following cards in combination with real Apple /// hardware
 # Build
 
 The following tools are used and included in the 'build' folder:
---ca65 assembler 
---ld65 linker
---a3driverutil.py
---Applecommander
---bootloader.py
+-ca65 assembler 
+-ld65 linker
+-a3driverutil.py
+-Applecommander
+-bootloader.py
 
 I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks. You might need to update the paths in winmake to suit.
 
