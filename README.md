@@ -24,7 +24,12 @@ The default boot order is:
     
 If the Alpha lock key is down when the system is reset, then this will boot directly of the internal floppy.
   
-If any key is pressed early/during boot, then the rom will load block0 from unit1 (second drive) of the found prodos card. This gives the opportunity to boot the second drive of a card directly. I struggled with the best key combo for this. Its something I might need to go back to and revisit. 
+If any key is pressed early/during boot, then the rom will load block0 from unit1 (second drive) of the found prodos card. This gives the opportunity to boot the second drive of a card directly. I struggled with the best key combo for this. Its something I might need to go back to and revisit.
+
+To replace the ROM, I have tested two options so far:
+-- Use a TMS2532 4k eprom. This is pin compatible and can be placed straight into the A3 motherboard. These can be a bit tricky to program. I made an adapter to swap three pins to make it look like a 2732, and was able to program it that way.
+-- Use an adapter like this one. It adapts a standard 2764 EPROM to be able to use in the A3 socket. It is physically a bit high, not to sure if it will fit in the case. It works fine functionally, and we get the 8k of firmware space with this option. 
+  http://store.go4retro.com/2364-adapter/
   
 ## Boot loader
   
@@ -130,9 +135,10 @@ I have also added some additional support to the Selector /// image for booting 
 
 These are available in the Languages menu on the Selector_hd.po image. 
   
-- added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher). I have also patched the loaded F8 rom so it can boot of block mode cards. 
+- added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher).
+  I have also patched the loaded F8 rom so it can boot of block mode cards. 
 
-Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3.
+  Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3.
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
   no save setting supported yet. 
