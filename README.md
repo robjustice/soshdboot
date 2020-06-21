@@ -48,11 +48,15 @@ Modified SOS.KERNEL:
 - The internal disk3 driver is replaced with an updated Problock3 driver. Some changes to the code to align with being loaded internally in the kernal. Also some optimisation is possible as the driver is now always in the non bank switched system bank, so need to copy that code to the 18fx page to avoid the bank switching.
 - The path names for the SOS.INTERP and SOS.DRIVER have been updated with the .PROFILE name for the problock driver. Also a second set of names is included to allow booting of the second drive.
 - The default prefix is updated as required, depending on the unit that is selected for booting.
-- The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not mmuch point having this if we are not booting of floppy.
+- The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not much point having this if we are not booting of floppy.
 - The number of drives is hard coded to two. So the settings of drives via SCP is ignored.
   
 ## Disk3 driver
-The original internal floppy driver modified to look like a standard sos driver. This is included in the SOS.DRIVER files on the hd po images.
+The original internal floppy driver modified to look like a standard sos driver. Set to use all four drives. 
+
+This is included in the SOS.DRIVER files on the hd po images.
+
+Note: I have not tested this extensively, so be a little careful with the disks you use.
   
 # Disks
 The following disk images are provided prebuilt and ready for use:
@@ -71,6 +75,8 @@ The following disk images are provided prebuilt and ready for use:
     - updated Quickfile///, now this runs
     - added some games into a games menu :)
     
+    A desktop manager version of this is also provided. This has a different boot_loader and SOS.DRIVER installed.
+    
 
 - plasma_hd.po
 
@@ -85,21 +91,23 @@ The following disk images are provided prebuilt and ready for use:
    This is a blank prodos disk with a special 1 block boot loader to load sos from the harddisk.
    this can be used if the rom has not been changed. Still very quick as only one block is read from 
    floppy, the rest is from the harddisk. 
+   
+   A desktop manager version of this is also provided. This has a different boot_loader installed.
 
 # Compatibility
 
 I have tested the following cards in combination with real Apple /// hardware
 
-| Card | Apple3 | Titan 3plus2 | Titan 3plus2e | Comments |
+| Card | Apple3 | Titan_3plus2 | Titan_3plus2e | Comments |
 | --- | --- | --- | --- | --- |
-| Booti | Works ok | Works ok | My Booti seems to struggle with this setup. Will boot the floppy ok | Tested with the card set to block mode |
+| Booti | Works ok | Works ok | My Booti seems to struggle with this combo. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works ok | Works ok | Works ok | works great with all combo's |
-| CFFA v1.3 | Works ok | Works ok | My CFFA seems to struggle with this | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok. I think some sort of init problem, maybe zp|
+| CFFA v1.3 | Works ok | Works ok | My CFFA seems to struggle with this combo | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok. I think some sort of init problem, maybe zp|
 
 
 # Build
 
-The following tools are used and included in the build/tools folder:
+The following tools are used and included in the bin folder:
 ca65 assembler 
 ld65 linker
 a3driverutil.py
@@ -115,7 +123,7 @@ git clone https://github.com/robjustice/soshdboot
 cd soshdboot
 winmake all
 ```
-This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update them on all of the disk images. ROM will be placed in the Build folder.
+This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update them on all of the disk images. The built ROM image,  SOS.KERNEL, SOS.DRIVER and bootloaders will be placed in the build folder.
 
 ## One more thing..
 
