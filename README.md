@@ -92,14 +92,14 @@ I have tested the following cards in combination with real Apple /// hardware
 
 | Card | Apple3 | Titan 3plus2 | Titan 3plus2e | Comments |
 | --- | --- | --- | --- | --- |
-| Booti | Works ok | Works ok | My Booti seems to struggle with this | Tested with the card set to block mode |
+| Booti | Works ok | Works ok | My Booti seems to struggle with this setup. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works ok | Works ok | Works ok | works great with all combo's |
-| CFFA v1.3 | Works ok | Works ok | My CFFA seems to struggle with this | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok, it think some sort of init problem, maybe zp|
+| CFFA v1.3 | Works ok | Works ok | My CFFA seems to struggle with this | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok. I think some sort of init problem, maybe zp|
 
 
 # Build
 
-The following tools are used and included in the build folder:
+The following tools are used and included in the build/tools folder:
 ca65 assembler 
 ld65 linker
 a3driverutil.py
@@ -107,6 +107,7 @@ Applecommander
 bootloader.py
 
 I have included my clunky windows make file, does the job for me. Tidied it up a bit with some ideas from qkumba's one in 4cade, thanks.
+You might need to update the paths in winmake to suit.
 
 ```
 Check out the source:
