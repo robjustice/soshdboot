@@ -33,7 +33,7 @@ To replace the ROM, I have tested two options so far:
   
 ## Boot loader
   
-I ended up providing two different boot loaders, as the dual boot functionality became apparent.
+I ended up providing two different boot loaders, as the dual boot functionality became apparent during the development.
   
 ### Two block boot loader
 This one is a modified version of the ProDOS/SOS two block boot loader. The SOS part is modified to boot SOS off the same card that the ROM loaded the boot loader from. The SOS part also icludes support for booting the second unit. The ProDOS part is unmodified, giving us the ability to boot the disk as either ProDOS or SOS. This one is included in the provided hd po images.
@@ -54,10 +54,10 @@ Modified SOS.KERNEL:
 - The path names for the SOS.INTERP and SOS.DRIVER have been updated with the .PROFILE name for the problock driver. Also a second set of names is included to allow booting of the second drive.
 - The default prefix is updated as required, depending on the unit that is selected for booting.
 - The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not much point having this if we are not booting of floppy.
-- The number of drives is hard coded to two. So the settings of drives via SCP is ignored.
+- The number of problock drives is hard coded to two. So the settings of drives via SCP is ignored.
   
 ## Disk3 driver
-The original internal floppy driver modified to look like a standard sos driver. Set to use all four drives. 
+The original internal floppy driver modified to look like a standard sos driver. Set to use all four drives. Does not look to the setting in SCP. 
 
 This is included in the SOS.DRIVER files on the hd po images.
 
@@ -68,7 +68,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
 - selector_hd.po
 
-    The updated bootloader, SOS.KERNEL, SOS.DRIVER, ProDOS 2.4.2 installed
+    The updated bootloader, SOS.KERNEL, SOS.DRIVER, and ProDOS 2.4.2 installed
     
     Selector /// SOS.INTERP loaded on startup
     
