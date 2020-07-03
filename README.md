@@ -2,7 +2,8 @@
 
 The Apple /// has always had the annoying limitation of only being able to boot from the internal floppy drive.
 I have had some thoughts previously on how to allow booting of other devices on the three, and the development of my problock3 driver re kindled these.
-The result detailed here is an updated ROM and version of SOS that allows booting directly from Prodos Block mode cards. Yay, no floppy needed!!
+The result detailed here is an updated ROM and an updated version of SOS that allows booting directly from Prodos Block mode cards. 
+Yay, no floppy needed!!
 
 ## Recap of the standard Apple /// boot
 
