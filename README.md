@@ -107,7 +107,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
 I have tested the following cards in combination with real Apple /// hardware
 
-| Card | Apple /// | Titan_3plus2 | Titan_3plus2e | Comments |
+| Card | Apple/// | Titan_3plus2 | Titan_3plus2e | Comments |
 | --- | --- | --- | --- | --- |
 | Booti | Works great | Works great | My Booti seems to struggle with this combo. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works great | Works great | Works great | works great with all combo's |
