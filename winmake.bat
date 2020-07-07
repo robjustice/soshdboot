@@ -10,13 +10,13 @@ setlocal enabledelayedexpansion
 
 rem Build stuff
 SET AC=build\ac.jar
-SET CA65=build\ca65.exe
-SET LD65=build\ld65.exe
+SET CA65=ca65
+SET LD65=ld65
 SET A3DUTIL=build\A3Driverutil.py
 SET BOOTLOADER=build\bootloader.py
-
 SET PYTHON=C:\python27\python.exe
 
+rem disk images
 SET BOOTDISK=disks\soshdboot.dsk
 SET BOOTTDMDISK=disks\soshdboot_tdm.dsk
 SET DISK=disks\sos_selector_hd.po
