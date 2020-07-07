@@ -83,7 +83,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
     - added some games into a games menu :)
     
     A desktop manager (tdm) version of this is also provided. This has a different boot_loader and SOS.DRIVER installed.
-    
+
 
 - plasma_hd.po
 
@@ -92,7 +92,8 @@ The following disk images are provided prebuilt and ready for use in the disks f
    Plasma SOS.INTERP loaded on startup
    
    Get into that fantastic plasma command line fast!
-  
+
+
 - soshdboot.dsk
    
    This is a blank prodos disk with a special 1 block boot loader to load sos from the harddisk.
@@ -100,6 +101,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
    floppy, the rest is from the harddisk. 
    
    A desktop manager (tdm) version of this is also provided. This has a different boot_loader installed.
+
 
 # Compatibility
 
