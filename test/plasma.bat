@@ -1,0 +1,10 @@
+rem test plasma_hd.po image
+rem
+rem adjust to your mame path
+set MAMEPATH=C:\Storage\_emu\mame
+
+rem copy in the new apple3 rom, assumes the apple3 folder to be there
+copy /b ..\out\apple3.rom %MAMEPATH%\roms\apple3\
+
+rem run mame ( note, -nothrottle in command for speedy testing)
+%MAMEPATH%\mame64 apple3 -rompath %MAMEPATH%\roms -skip_gameinfo -resolution 640x480 -window -nothrottle -sl1 cffa2 -hard1 ..\disks\plasma_hd.po
