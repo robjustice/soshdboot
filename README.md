@@ -2,7 +2,8 @@
 
 The Apple /// has always had the annoying limitation of only being able to boot from the internal floppy drive.
 I have had some thoughts previously on how to allow booting of other devices on the three, and the development of my problock3 driver re kindled these.
-The result detailed here is an updated ROM and an updated version of SOS that allows booting directly from Prodos Block mode cards. 
+The result detailed here is an updated ROM and an updated version of SOS that allows booting directly from Prodos Block mode cards.
+
 Yay, no floppy needed!!
 
 ## Recap of the standard Apple /// boot
@@ -104,7 +105,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
 I have tested the following cards in combination with real Apple /// hardware
 
-| Card | Apple3 | Titan_3plus2 | Titan_3plus2e | Comments |
+| Card | Apple /// | Titan_3plus2 | Titan_3plus2e | Comments |
 | --- | --- | --- | --- | --- |
 | Booti | Works great | Works great | My Booti seems to struggle with this combo. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works great | Works great | Works great | works great with all combo's |
