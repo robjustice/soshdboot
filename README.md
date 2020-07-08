@@ -52,6 +52,7 @@ For both of these bootloaders, there is also a Desktop Manager version. This loa
   
 ## SOS.KERNEL
 Modified SOS.KERNEL:
+- Based on the SOS 1.3 source code with the Selector version modifications included (they are marked (S) in the source)
 - The internal disk3 driver is replaced with an updated Problock3 driver. Some changes to the code to align with being loaded internally in the kernal. Also some optimisation is possible as the driver is now always in the non bank switched system bank, so no need to copy that code to the 18fx page to avoid the bank switching.
 - The path names for the SOS.INTERP and SOS.DRIVER have been updated with the .PROFILE name for the problock driver. Also a second set of names is included to allow booting of the second drive.
 - The default prefix is updated as required, depending on the unit that is selected for booting.
@@ -87,7 +88,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
 - plasma_hd.po
 
-   This is a copy of the Alpha1 release 800k disk put onto a 16mb image with the updated bootloader, SOS.KERNEL, SOS.DRIVER installed
+   This is a copy of the PLasma 2.0 Alpha1 release 800k disk put onto a 16mb image with the updated bootloader, SOS.KERNEL, SOS.DRIVER installed
    
    Plasma SOS.INTERP loaded on startup
    
@@ -96,7 +97,7 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
 - soshdboot.dsk
    
-   This is a blank prodos disk with a special 1 block boot loader to load sos from the harddisk.
+   This is a blank prodos 140k disk with a special 1 block boot loader to load sos from the harddisk.
    this can be used if the rom has not been changed. Still very quick as only one block is read from 
    floppy, the rest is from the harddisk. 
    
@@ -144,7 +145,9 @@ These are available in the Languages menu on the Selector_hd.po image.
 - added Titan 3plus2 emulation start. (this is a hand patched version of the Selector Apple2 emulation launcher).
   I have also patched the loaded F8 rom so it can boot of block mode cards. (only check for three sig bytes)
 
-  Two menu options added to Selector, standard slot search (7to1) and reversed (1to6) to suit the A3.
+  Two menu options added to Selector, standard slot search (S7-S1) and reversed (S1-S6) to suit the A3.
+  
+  The 'Titan 3plus2 boot S1-S6' emulation start option can also be used to access the CFFA3000 menu easily.
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
   no save setting supported yet. Its a quick put together that just loads everything into the interpreter bank and then moves everything in memory to match the original 3plus2e boot disk.
