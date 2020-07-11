@@ -147,7 +147,7 @@ These are available in the Languages menu on the Selector_hd.po image.
 
   Two menu options added to Selector, standard slot search (S7-S1) and reversed (S1-S6) to suit the A3.
   
-  The 'Titan 3plus2 boot S1-S6' emulation start option can also be used to access the CFFA3000 menu easily.
+  The 'Titan 3plus2 boot S1-S6' emulation start option can also be used to access the CFFA3000 or Booti config menu's easily.
 
 - added Titan 3plus2e emulation start. This is a new interpreter based on disassembing the 3plus2e boot disk.
   no save setting supported yet. Its a quick put together that just loads everything into the interpreter bank and then moves everything in memory to match the original 3plus2e boot disk.
