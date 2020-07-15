@@ -476,6 +476,8 @@ ZZORG         =          *
               .IMPORT    DIB3
               .IMPORT    DIB4
 ;
+              .IMPORT    PRTDRIV                                     ; PRINT LOADED DRIVERS 
+;
 ;ENTRY I_BASE_P ; USED BY BFM_INIT2  (HARDWIRED!) 
 ;PAGE
 ;***************************************************************************************************
@@ -604,7 +606,7 @@ SLDR010:      STA        CZPAGE,X
 
 DEX
               BNE        SLDR010
-;                                       ; SETUP SOS CALL ENVIRONMENT (WRITE PROTECT=OFF) 
+;                                                                    ; SETUP SOS CALL ENVIRONMENT (WRITE PROTECT=OFF) 
               LDA        #$30                                        ; E:=( 0.0.1.1:0.0.0.0 ) 
               STA        E_REG                                       ;    ( 1.I.S.R:W_P.R.R ) 
 ;
@@ -613,9 +615,9 @@ DEX
 TXS
               LDA        #>CZPAGE                                    ; ZREG:=CALLER'S Z PAGE 
               STA        Z_REG
-;                                       ; +--------------------------------+ 
+;                                                                    ; +--------------------------------+ 
               JSR        SOSLDR1                                     ; ! PROCESS KRNL/INTERP/DRVR FILES ! 
-;                                       ; +--------------------------------+ 
+;                                                                    ; +--------------------------------+ 
               LDA        E_REG
               AND        #$10                                        ; SETUP SOS CALL ENVIRONMENT (WRITE PROTECT=ON) 
               ORA        #$28                                        ; E:=( 0.0.1.X:1.0.0.0 ) 
@@ -625,9 +627,10 @@ TXS
               TXS
               LDA        #>CZPAGE                                    ; ZREG:=CALLER'S Z PAGE
               STA        Z_REG
-;                                                                                  +---------------+ 
+;                                                                                                               +---------------+ 
               LDA        SYSBANK                                     ; BREG:=SYSBANK                            ! SEE FIGURE 4. ! 
               STA        B_REG                                       ;                                          +---------------+
+              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
               JMP        (I_BASE_P)                                  ; SOS LOAD COMPLETE - JMP TO INTERPRETER 
 ;
 ;THE END.
@@ -2221,7 +2224,6 @@ SU_LEN        =          SU_END-SET_UNIT
 
 codeend       = *
 SLOP          = $28f8 - codeend
-;SLOP          =          $50 - SU_LEN + 4  ;need to fix this up a bit better
               .RES       SLOP                                        ; +-----------------------------------+ 
 INITMODULE:                                                          ;.RES $200 ; ! KERNEL'S INIT MODULE RESIDES HERE ! 
 LDREND        =          *+$200                                      ; +-----------------------------------+ 

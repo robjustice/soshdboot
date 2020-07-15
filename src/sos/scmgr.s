@@ -132,7 +132,7 @@ Z_SAVE       =          $01FD
 B_SAVE       =          $01FC
 ;
 ADR_LOW      =          $2000                                 ; LOW    ADDRESS   (BOUNDS CHECKING)
-ADR_HIGH     =          $B800                                 ; HIGH   ADDRESS
+ADR_HIGH     =          $BC00 ;B800  ;hack this to allow driver print to work     ; HIGH   ADDRESS
 ADR_MID      =          $A000                                 ; MIDDLE ADDRESS
 ;
 ; SCMGR'S VARIABLES
