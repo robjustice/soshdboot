@@ -58,7 +58,7 @@ Modified SOS.KERNEL:
 - The default prefix is updated as required, depending on the unit that is selected for booting.
 - The SOS inbuilt copy protection is removed. This speeds things up a little, and there is not much point having this if we are not booting from a floppy that may have had copy protection.
 - The number of problock drives is hard coded to two. So the settings of drives via SCP is ignored.
-- If you hold the 'ctrl' key down during boot, then after the SOS splash screen all of the current drivers will be displayed. Skipped if the key is not pressed. This print includes all loaded drivers and the bank / address of the entry point for each driver. This is a help to debug drivers in emulation.
+- If you hold the 'ctrl' key down during boot, then after the SOS splash screen all of the current drivers will be displayed. Skipped if the key is not pressed. This print includes all loaded drivers and the bank / address of the entry point for each driver. This is a help to debug drivers in MAME.
   
 ## Disk3 driver
 The original internal floppy driver modified to look like a standard sos driver. Set to use all four drives. Does not look to the setting in SCP. 
