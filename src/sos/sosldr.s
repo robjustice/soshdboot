@@ -13,6 +13,9 @@
 ;    D_PATH2  ".PB2/SOS.DRIVER"
 ;    set K_DRIVES to 2, then don't update from driver file
 ;
+; - Call new print driver routine, checks for 'ctrl' key pressed
+;    Hold ctrl down to keep the driver list on the screen
+;
 ; Updates by Robert Justice
 ;
 ; macro to support setting the most significant bit on for ascii strings with EDASM MSB ON
@@ -630,7 +633,7 @@ TXS
 ;                                                                                                               +---------------+ 
               LDA        SYSBANK                                     ; BREG:=SYSBANK                            ! SEE FIGURE 4. ! 
               STA        B_REG                                       ;                                          +---------------+
-              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
+;              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
               JMP        (I_BASE_P)                                  ; SOS LOAD COMPLETE - JMP TO INTERPRETER 
 ;
 ;THE END.
@@ -1214,6 +1217,9 @@ WAIT:         INC        SRC_P                                       ; WAIT FOR 
 ;
               LDA        #$80                                        ; TURN VIDEO ON 
               STA        SCRNMODE
+
+              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
+
               RTS
 ;***************************************************************************************************
 ;PAGE

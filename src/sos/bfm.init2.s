@@ -7,7 +7,7 @@
 ;   I've had this idea for a while, just not sure on how to implement it. I noticed when looking
 ;   through the desktopmanager code, its driver uses an event to run after they are loaded to do its init.
 ;   I wrote a driver using this method to print them, but then realised i can put it in here, so don't
-;   need the vent stuff.
+;   need the event stuff.
 ;   Prints:
 ;    - which drivers are loaded
 ;    - prints the loaded address and bank for debugging
@@ -59,7 +59,7 @@ ZZORG:
 ENVREG       = $FFDF          ; ENVIRONMENT REGISTER
 BANK_REG     = $FFEF          ; BANK REGISTER
 KEYBD        = $C008          ; KEYBOARD B REG
-EXTPG        = $1401          ; DRIVER EXTENDED BANK ADDRESS OFFSET
+EXTPG        = $1601          ; EXTENDED BANK ADDRESS OFFSET (we are in the interpreter environment)
 SYSERR       = $1928          ; REPORT ERROR TO SYSTEM
 
 E_IFR        = $FFED          ; VIA E INTERRUPT FLAG REGISTER
@@ -125,6 +125,14 @@ WRITEBUF:    .BYTE   24                ; SET CURSOR XPOS
 ROW:         .BYTE   3                 ; ROW 3
 LINE:        .RES    75,$A0
 
+; CLEAR CONSOLE PARAM LIST
+CLEARCON:    .BYTE   3
+CLEARREF:    .BYTE   0
+             .WORD   CLRSCR
+             .WORD   1
+
+CLRSCR:      .BYTE   28                ; CLEAR VIEWPORT 
+
 ; CLOSE CONSOLE PARAM LIST
 CLOSECON:    .BYTE   1
 CLOSEREF:    .BYTE   0
@@ -159,6 +167,7 @@ PRINT:       PLA                        ;RESTORE ENVIRONMENT
 @OK1:        LDA     CONSREF            ;UPDATE REFERENCE NUMBERS
              STA     INITREF
              STA     WRITEREF
+             STA     CLEARREF
              STA     CLOSEREF
              BRK                        ;INIT CONSOLE
              .BYTE   SOS_WRITE
@@ -168,15 +177,19 @@ PRINT:       PLA                        ;RESTORE ENVIRONMENT
              JSR     SYSERR
 
 ; LETS RUN THROUGH EACH DEVICE DRIVER
-@OK2:        LDX     #1                 ;START AT DEV 1
+@OK2:        LDA     BANK_REG           ;SAVE CURRENT BANK
+             PHA
+             LDA     #0                 ;DISABLE EXTENDED ADDRESSING
+             STA     POINTER+EXTPG
+             LDX     #1                 ;START AT DEV 1
              STX     DEVICE
+
 LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              STA     POINTER
              LDA     SDT_DIBH,X
              STA     POINTER+1
              LDA     SDT_BANK,X
-             STA     POINTER+EXTPG
-
+             STA     BANK_REG
 ; GRAB THE NAME OF THE DRIVER
              LDY     #0
              LDA     (POINTER),Y        ;GET NAME LENGTH FROM DIB
@@ -186,7 +199,7 @@ LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              LDA     (POINTER),Y        ;GET THE NAME
              STA     LINE,Y             ;STORE NAME IN CONSOLE WRITE BUFFER
              DEX
-             BPL     @L1
+             BNE     @L1
 
              LDA     #16                ;ALLOW 16 CHARS FOR NAME
              CLC
@@ -247,7 +260,9 @@ LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              JMP     LOOP
 
 
-DONE:        LDA     ENVREG             ;TURN ON CXXX I/O
+DONE:        PLA                        ;RESTORE BANK_REG
+             STA     BANK_REG
+             LDA     ENVREG             ;TURN ON CXXX I/O
              PHA                        ;SAVE CURRENT STATE
              ORA     #$40 
              STA     ENVREG
@@ -258,6 +273,11 @@ WAIT:        LDA     KEYBD              ;CHECK IF CTRL KEY IS STILL DOWN
 
              PLA                        ;RESTORE ENVREG
              STA     ENVREG
+
+
+             BRK                        ;CLEAR SCREEN
+             .BYTE   SOS_WRITE
+             .WORD   CLEARCON
 
              BRK                        ;CLOSE CONSOLE
              .BYTE   SOS_CLOSE

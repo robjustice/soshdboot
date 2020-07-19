@@ -1,3 +1,9 @@
+; Update ADR_HIGH to $BC00 to allow call from print driver routine
+; SOS does not allow to call itself, this increases the address
+; so it passes from the print driver routine
+;
+; Updates by Robert Justice
+;
 ;SBTL "SOS 1_1 SYSTEM CALL MANAGER"
 ;.RELOC
              .SEGMENT   "CODE"
