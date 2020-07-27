@@ -161,3 +161,8 @@ With either of these we can now boot Prodos from the same harddisk image without
 
 I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
 
+# Acknowledgements
+
+Special thanks to Jorma for helping me out testing the updated SOS and the updated ROM. Much appreciated!
+Check out his great blog for retro Apple things https://finapple.hho.fi/finapple/
+
