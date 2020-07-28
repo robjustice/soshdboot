@@ -64,6 +64,7 @@ if "%1" equ "clean" (
 echo y|1>nul 2>nul rd lst /s
 echo y|1>nul 2>nul rd obj /s
 echo y|1>nul 2>nul rd out /s
+echo y|1>nul 2>nul rd rom /s
 goto :EOF
 )
 
@@ -80,6 +81,7 @@ goto :EOF
 2>nul md obj\disk3
 2>nul md obj\boot
 2>nul md out
+2>nul md rom
 goto :EOF
 
 rem Assemble SOS and add SOS.KERNEL to the disk images
@@ -116,7 +118,7 @@ rem Assemble Monitor ROM
 %CA65% src/rom/diskio.s -l lst/rom/diskio.lst -o obj/rom/diskio.o
 %CA65% src/rom/saratests.s -l lst/rom/saratests.lst -o obj/rom/saratests.o
 %CA65% src/rom/monitor.s -l lst/rom/monitor.lst -o obj/rom/monitor.o
-%LD65% obj/rom/diskio.o obj/rom/saratests.o obj/rom/monitor.o -o out/apple3.rom -C build/apple3.cfg
+%LD65% obj/rom/diskio.o obj/rom/saratests.o obj/rom/monitor.o -o rom/apple3hdboot.rom -C build/apple3.cfg
 goto :EOF
 
 rem Assemble disk3 driver and update SOS.DRIVER file in disk images
