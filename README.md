@@ -159,7 +159,10 @@ These are available in the Languages menu on the Selector_hd.po image.
       
 With either of these we can now boot Prodos from the same harddisk image without using the floppy drive :-)
 
-I'll update here with a link to the details for the patching and source code for the 3plus2e interpreter once I tidy it up.
+![Selector Menu showing Titan options](/images/Titanmenu.jpg)
+
+Finally made some time documenting the patching and support for the 3plus2e interpreter, see here under Titan and Titan2e:
+https://github.com/robjustice/Apple3
 
 # Acknowledgements
 
