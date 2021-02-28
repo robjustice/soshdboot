@@ -161,7 +161,7 @@ With either of these we can now boot Prodos from the same harddisk image without
 
 ![Selector Menu showing Titan options](/images/Titanmenu.jpg)
 
-Finally made some time documenting the patching and support for the 3plus2e interpreter, see here under Titan and Titan2e:
+Finally made some time documenting the patching and support for the ///plus// and ///plus//e interpreter, see here under Titan and Titan2e:
 https://github.com/robjustice/Apple3
 
 # Acknowledgements
