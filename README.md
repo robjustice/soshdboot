@@ -87,11 +87,13 @@ The following disk images are provided prebuilt and ready for use in the disks f
 - sos_selector_tdm_hd.po
     
     Same as the 'sos_selector_hd.po' image with the addition of 'The Desktop Manager' (tdm) installed on it.
-    This requires a different boot_loader for tdm and the SOS.DRIVER updated with the tdm driver installed on the image.
+    
+    This requires a different boot_loader for tdm and the SOS.DRIVER updated to include the tdm driver.
 
 - sos_selector_tdm_hd_mouse.po
     
     Same as the 'sos_selector_tdm_hd.po' image with the addition of the mouse driver installed on it.
+    
     This requires a Mouse card in slot 4, otherwise booting will hang if its not detected. This also includes an older version of tdm that supported the use of the mouse to generate cursor key movements (that took a long time to determine that this was the cause of the mouse not working with it...). This allows the Selector/// menu's to be navigated via the mouse.
 
 - plasma_hd.po
@@ -106,10 +108,11 @@ The following disk images are provided prebuilt and ready for use in the disks f
 - soshdboot.dsk
    
    This is a blank prodos 140k disk with a special 1 block boot loader to load SOS from the harddisk.
-   This can be used if the rom has not been changed. 
-   Still very quick as only one block is needed to be read from floppy, the rest is then read from the harddisk. 
+   
+   This can be used if the rom has not been changed. Still very quick as only one block is needed to be read from floppy, the rest is then read from the harddisk. 
    
 - soshdboot_tdm.dsk
+
    Same as 'soshdboot.dsk' but with a revised boot_loader installed that works with The Desktop Manager.
 
 
