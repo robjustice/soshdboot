@@ -120,9 +120,9 @@ modboot:        ldy          mods,x
                 sta          zzzend,x
                 dex
                 bpl          modboot
-                lda          #<d2io                    ;reset device entry
+                lda          #>d2io                    ;reset device entry
                 sta          dent+1                    ; to point at disk ii routines.
-                lda          #>d2io                    ;get low addr (must be <$80)
+                lda          #<d2io                    ;get low addr (must be <$80)
 ndsk2:          ldy          #0                        ;make sure y=0 again.
                 cmp          #$f9
                 bcs          bterr1                    ;branch if not bootable device.
