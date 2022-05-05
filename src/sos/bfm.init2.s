@@ -52,6 +52,9 @@ ZZORG:
              .IMPORT SDT_BANK
              .IMPORT SDT_UNIT
 
+             .EXPORT COPY_SCRH      ; for copying screenholes across to the internal driver 
+             .IMPORT TmpScrH
+
 ;
 ; SOS EQUATES
 ;
@@ -358,6 +361,49 @@ ADDSPACE:    STY     TEMPY           ;SAVE Y
              LDY     TEMPY           ;RESTORE Y
              RTS
 
+;
+; Copy screenholes to sos embedded problock driver
+; to maintain card state
+;
+COPY_SCRH:   
+             LDA        $348+1   ;dent = $48      ;device call entry address from zeropage 3
+             AND        #$0f
+             TAX
+             LDA        $7F8,X
+             STA        TmpScrH+14
+             LDA        $778,X
+             STA        TmpScrH+12
+             LDA        $6F8,X
+             STA        TmpScrH+10
+             LDA        $678,X
+             STA        TmpScrH+8
+             LDA        $5F8,X
+             STA        TmpScrH+6
+             LDA        $578,X
+             STA        TmpScrH+4
+             LDA        $4F8,X
+             STA        TmpScrH+2
+             LDA        $478,X
+             STA        TmpScrH
+             
+             LDA        $7F8
+             STA        TmpScrH+15
+             LDA        $778
+             STA        TmpScrH+13
+             LDA        $6F8
+             STA        TmpScrH+11
+             LDA        $678
+             STA        TmpScrH+9
+             LDA        $5F8
+             STA        TmpScrH+7
+             LDA        $578
+             STA        TmpScrH+5
+             LDA        $4F8
+             STA        TmpScrH+3
+             LDA        $478
+             STA        TmpScrH+1
+
+             RTS
 
 ZZEND:
 ZZLEN        =         ZZEND-ZZORG

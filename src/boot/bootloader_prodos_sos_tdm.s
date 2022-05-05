@@ -3,19 +3,23 @@
 ;  
 ;  The prodos part is unchanged. If the block 0 is loaded in by an
 ;  Apple II or Apple //e rom, boot prodos
-;  
-;  If block 0 is loaded by the supporting modified Apple /// rom
-;  then it calls the block mode interface and loads block 1
-;  into A000 and executes that.
-;  
+; 
+;  For booting on the A3, the original soshdboot rom read blk0 in
+;  by using a read blk cmd. The revised soshdboot rom calls the prodos
+;  card $Cn00 entry point to load the boot blk. The side affect of this
+;  is it loads into $800, intead of $A000. This bootloader if entered via
+;  the a2 entry of $801, checks the reset vector to determine if its running
+;  on an a3, if yes, then loads blk1 in.
+;
 ;  The block1/sos bootloader then uses the blockmode interface to
-;  boot sos from the block mode card
-;  
+;  boot sos from the block mode card or rom based routines if booted from
+;  floppy
+;
 ;  - desktopmanager version, load sos one bank lower than highest
 ;  
 ;  By Robert Justice
 ;
-;  
+;
 ;                sbtl         'universal boot loader - stage 2'
 ;
 ; prodos universal boot loader.  this is the second stage boot
@@ -77,9 +81,30 @@ kernel          =            $2000
 xboot:          .byte        $01                       ;(prodos boot id)
 entry:          sec                                    ;(apple iii enters xboot 'ora $38')
                 bcs          entry1                    ;branch if not apple iii native mode.
-                jmp          goapl3                    ;go do apple iii boot!
+                                                       ;else do apple iii floppy boot!
+                lda          #$9f                      ;the return address is $a000
+                pha
+                lda          #$ff
+                pha
+                lda          #1                        ;read block 1.
+                ldx          #0
+                jmp          blockio                   ;using Apple3 rom (floppy)
 
-entry1:         stx          unit                      ;save unit number.
+entry1:         ldy          $FFFC                     ;are we a2 or a3?
+                                                       ; need this check when blk0 is loaded into $800 on the a3
+                                                       ; by the card boot routines at $Cn00
+                bpl          entry2                    ;go do a2
+                                                       ;else do apple iii prodos card boot!
+                lda          #$9f                      ;the return address is $a000
+                pha
+                lda          #$ff
+                pha
+                lda          #$a0                      ;update load buffer address to $a000
+                sta          buff+1
+                inc          blok                      ;read block 1.
+                jmp          (dent)                    ;using Prodos block mode card
+
+entry2:         stx          unit                      ;save unit number.
                 cmp          #$03                      ;for disk ii.
                 php                                    ;save result, it may be irrelevent.
                 txa                                    ;find out if disk ii.
@@ -108,11 +133,11 @@ entry1:         stx          unit                      ;save unit number.
 
 isdsk2:         sta          trktmp                    ;make sure previous track =0
                 sta          dent                      ;and dent points at beginning of slot
-                ldy          #$63                      ;move code from card to ram
+                ldy          #$63-5                      ;move code from card to ram $5e
 mvboot:         lda          (dent),y
                 sta          zzstart-$5e,y
                 iny
-                cpy          #$eb                      ;have we moved enough?
+                cpy          #$eb+5                      ;have we moved enough?
                 bne          mvboot
                 ldx          #6                        ;now modify code to handle errors.
 modboot:        ldy          mods,x
@@ -237,19 +262,6 @@ endcode         =            *
                 rts
                 jmp          seek
 
-goapl3          =            *+$9800
-                lda          #$9f                      ;make apple iii boot using block 1.
-                pha                                    ;(the return address is $a000)
-                lda          #$ff
-                pha
-                inc          blok                      ;read block 1.
-                nop
-                jmp          (dent)
-                
-                ;lda          #1                        ;read block 1.
-                ;ldx          #0
-                ;jmp          $f479
-
 ;
 quitmes:        jsr          clrscrn                   ;clear video.
                 ldy          #meslen                   ;print message centered on screen.
@@ -259,8 +271,9 @@ prmess:         lda          errmess,y
                 bpl          prmess
 hang:           jmp          hang
 ;
-meslen          =            28
-errmess:        ascmsbon     "*** UNABLE TO LOAD PRODOS  ***"
+meslen          =            26
+errmess:        ascmsbon     "* UNABLE TO LOAD PRODOS * "
+
 
 setphase:       lda          curtrk                    ;get current track
 clrphase:       and          #3                        ;mask for 1 of 4 phases
@@ -352,17 +365,20 @@ rddata:         php                                    ;carry set if reading sec
 rd0:            dey                                    ;every time y=0 decrement find count.
                 beq          tryread
 
+                
+                .segment "DATA2"
+
 zzstart         =            *
 ; from zzstart to zzend code is moved from
 ; rom and modified to match this code...
+;
+; zzstart must equal $A00, so the above code length needs to ensure this
+                .if        zzstart <> $a00
+                .fatal     "zzstart not equal to $A00"
+                .endif
 
-rd1:            lda          q6l,x                     ;read a byet from the state machine.
+rd1:            lda          q6l,x                     ;read a byte from the state machine.
                 bpl          rd1                       ;loop until ready.
-
-;                dsect
-                .segment "DATA2"
-                .org         zzstart+5                 ;equivalent to org *
-
 rd1a:           eor          #$d5                      ;mark 1?
 mod1            =            <(*-zzstart+1)
                 bne          rd0                       ;branch if not.
@@ -458,12 +474,12 @@ goseek:         jmp          seek
 
 ;                dend
                 .segment     "DATA"
-                .res         $a00-zzstart-5,0
+;                .res         $a00-zzstart,0
 
 
 ; the following is the apple /// sos boot loader.
 ;                msb          off
-;                sbtl         "sos system boot 2blk.1"
+;                sbtl         "sos system boot 2blk.2"
 ;*******************************************************************
 ;*
 ;* sos system boot
@@ -515,12 +531,19 @@ e_reg           =            $ffdf
 b_reg           =            $ffef
 kybdstrb        =            $c010
 
+;* 
+;* monitor data and addresses 
+;* 
+ibcmd           =            $87 
+ibbufp          =            $85 
+blockio         =            $f479
 
 ;*
 ;* zero page storage (z reg = $03)
 ;*
 
 zpage           =            $e0
+blknum          =            zpage+0                   ; & 1
 begin           =            zpage+2                   ; & 3
 end             =            zpage+4                   ; & 5
 blk_ctr         =            zpage+6
@@ -555,7 +578,7 @@ bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
                 jmp          boot+runbase-asmbase
-                .byte        "SOSBOOT 2blk.1"  ; sos boot identification "stamp"
+;                .byte        "SOSBOOT 2blk.2"  ; sos boot identification "stamp"
 
 ;*******************************************************************
 ;*
@@ -564,7 +587,7 @@ runbase         =            $a000                     ;execution base address
 ;*******************************************************************
 
 namlen:         .byte        10
-name:           .byte        "SOS.KERNEL     "
+name:           .byte        "SOS.KERNEL"    ;removed 5 trailing spaces to save space
 name2:          .byte        "SOS KRNL"
 name2_len       =            *-name2
 ;
@@ -576,11 +599,11 @@ msg0:           .byte        "I/O ERR"
 msg0l           =            *-msg0
 xmsg0:          .word        *-msg-1
 
-msg1:           .byte        "'SOS.KERNEL' NOT FOUND"
+msg1:           .byte        "KERNEL NOT FOUND"
 msg1l           =            *-msg1
 xmsg1:          .word        *-msg-1
 
-msg2:           .byte        "INVALID KERNEL"
+msg2:           .byte        "BAD KERNEL"
 msg2l           =            *-msg2
 xmsg2:          .word        *-msg-1
 ;
@@ -623,7 +646,6 @@ boot:           sei
 ;
 ; find highest memory bank in system and set bank reg to it
 ; - max memsize = 512k. (support OnThree 512k memory card)
-; - modified for tdm, load interp one bank lower
 ;
                 lda          #$0d                      ;tdm-was $0e load highest bank for 512k
                 sta          b_reg
@@ -647,34 +669,33 @@ boot005:        dec          b_reg
 ; read in blocks 1 thru n (rest of boot and all of root dir.)
 ;
 boot006:        lda          #1
-                sta          blok
+                sta          blknum
                 lda          #0
-                sta          blok+1
-
-                lda          #0
-                sta          buff
+                sta          blknum+1
+                sta          ibbufp
+                sta          blk_ctr              ;init this to zero for use later
+                sta          temp                 ;init this to zero for use later
                 lda          #$a2
-                sta          buff+1
+                sta          ibbufp+1
 
                 jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
 
-                inc          blok                    ; first root directory block (block 2)
-                lda          #0
-                sta          blk_ctr
-rd_dir:         inc          buff+1
-                inc          buff+1
+                inc          blknum                    ; first root directory block (block 2)
+
+rd_dir:         inc          ibbufp+1
+                inc          ibbufp+1
                 inc          blk_ctr
 
                 jsr          read_blk+runbase-asmbase  ; root directory
 
                 ldy          #nextdblk                 ; if nextdir field = 0 then done
-                lda          (buff),y
-                sta          blok
+                lda          (ibbufp),y
+                sta          blknum
                 iny
-                lda          (buff),y
-                sta          blok+1
+                lda          (ibbufp),y
+                sta          blknum+1
                 bne          rd_dir
-                lda          blok
+                lda          blknum
                 bne          rd_dir
 
 ;
@@ -756,24 +777,24 @@ srch040:        clc
 ;
 match:          ldy          #xblk
                 lda          (begin),y
-                sta          blok
+                sta          blknum
                 iny
                 lda          (begin),y
-                sta          blok+1
+                sta          blknum+1
                 lda          xk_xblk+runbase-asmbase   ;get lo byte of address
-                sta          buff
+                sta          ibbufp
                 lda          xk_xblk+1+runbase-asmbase ;get hi byte of address
-                sta          buff+1
+                sta          ibbufp+1
                 jsr          read_blk+runbase-asmbase  ; index block
 
                 lda          xk_file+runbase-asmbase   ;get lo byte of address
-                sta          buff
+                sta          ibbufp
                 lda          xk_file+1+runbase-asmbase
-                sta          buff+1
+                sta          ibbufp+1
                 lda          k_xblk
-                sta          blok
+                sta          blknum
                 lda          k_xblk+$100
-                sta          blok+1
+                sta          blknum+1
                 jsr          read_blk+runbase-asmbase  ; first data block
 ;
 ; check the label, should be 'sos krnl'
@@ -790,22 +811,20 @@ chk020:         dex
 ;
 ; read in the rest of the data blocks in file "sos.kernel"
 ;
-                lda          #0
-                sta          temp
-
+                                                ;temp set to 0 above
 data010:        inc          temp
-                inc          buff+1
-                inc          buff+1
+                inc          ibbufp+1
+                inc          ibbufp+1
 
                 ldx          temp                      ; get block address of next data block
                 lda          k_xblk,x
-                sta          blok
+                sta          blknum
                 lda          k_xblk+$100,x
-                sta          blok+1
+                sta          blknum+1
 
-                lda          blok                    ; is next block address = 0 ?
+                lda          blknum                    ; is next block address = 0 ?
                 bne          data020
-                lda          blok+1
+                lda          blknum+1
                 beq          entry_a3                  ; yes, stop reading
 
 data020:        jsr          read_blk+runbase-asmbase  ; read data block
@@ -845,20 +864,48 @@ entry_a3:       clc                                    ; sosldr:=k.hdr.cnt+(k.hd
 ;*
 ;*******************************************************************
 
+
 ;*******************************************************************
 ;*
 ;* read block routine
+;* modified to determine if booted of floppy or prodos card
+;* and readblock from correct source 
 ;*
-;* input: blok & buff
+;* input: blknum & ibbufp
 ;*
 ;*******************************************************************
 
 read_blk        =            *
-                lda          #1
+                lda          dent+1                   ;check if we are doing floppy
+                and          #$f8                     ; or block mode card
+                cmp          #$c0
+                bne          doblkio                  ;go do floppy read
+
+                lda          #1                       ;else do block mode card
                 sta          dcmd                     ;read
+                
+                lda          ibbufp
+                sta          buff
+                lda          ibbufp+1
+                sta          buff+1
+
+                lda          blknum
+                sta          blok
+                lda          blknum+1
+                sta          blok+1
+                
                 jsr          blkio
                 bcs          rd_err
-                rts                                    ; normal exit
+                rts                                    ;normal exit
+
+doblkio:        lda          #1                
+                sta          ibcmd
+                lda          blknum
+                ldx          blknum+1
+                jsr          blockio
+                bcs          rd_err
+                rts
+
 
 rd_err:         ldx          xmsg0+runbase-asmbase     ;err, i/o error
                 ldy          #msg0l
@@ -892,7 +939,7 @@ prnt010:        lda          msg+runbase-asmbase,x
                 dec          temp
                 bne          prnt010
 
-                lda          $c040                     ; sound bell
+;                lda          $c040                     ; sound bell remove **remove this to save some bytes
                 jmp          *+runbase-asmbase         ; hang until reboot (ctrl/reset)
 
 ;****************************************************************
@@ -903,5 +950,5 @@ prnt010:        lda          msg+runbase-asmbase,x
 ;****************************************************************
 
 pad             =            *-asmbase
-                .res         512-pad,0                 ;pad to end of block
+       ;         .res         512-pad,0                 ;pad to end of block
 zzend           =            *

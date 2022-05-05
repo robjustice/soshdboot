@@ -9,6 +9,7 @@
 ; - Add test for shift key pressed:
 ;    not pressed = boot unit0
 ;    pressed     = boot unit1
+; - Update to use card Cn00 entry for boot
 ;
 ; Updates by Robert Justice
 
@@ -91,6 +92,8 @@ p_blknum   =    $46
 p_dent     =    $48             ; device call entry address.
 
 ScanStart  =    $C4             ; Slot number to start scan from
+
+MSLOT      =    $07F8           ; Apple2 current user of $C8 space
 ;
            .ORG    $F4C5
 RAMTBL:    .BYTE   $00,$B1,$B2,$BA,$B9,$10,$00,$13
@@ -425,29 +428,23 @@ GOBOOT:    JMP     $A000        ; GO TO IT FOOL...
 Match:     sta     p_dent              ; Set card driver entry low byte
            lda     PTRHI
            sta     p_dent+1            ; Set card driver entry high byte
+           sta     MSLOT               ; Autostart rom sets this before passing
+                                       ;  to the card firmware
            asl
            asl
            asl
            asl
            sta     p_unit
            lda     KEYBD
-           and     #$01                ;test for any key pressed
-           beq     unit0               ;no, boot unit 0
+           and     #$02                ;test for shift key pressed, bit1=0 is pressed
+           bne     unit0               ;no, boot unit 0
            lda     p_unit
            ora     #$80                ;yes, boot unit 1
            sta     p_unit
-unit0:     ldx     #0                  ;block 0
-           stx     p_blknum
-           stx     p_blknum+1
-           stx     p_ibbufp            ;load into $A000
-           inx
-           stx     p_ibcmd             ;read
-           lda     #$a0
-           sta     p_ibbufp+1
-           jsr     pblockio            ;prodos card blockio
-           jmp     BOOTCHK
-            
-pblockio:  jmp     (p_dent)            ;device block entry 
+
+unit0:     ldx     p_unit              ;boot loader will use unit from X
+           jmp     (PTRLO)             ;jump to card boot code, $Cn00
+
 
 ; pad out so sara test subroutines start from the original address
 bootend    = *

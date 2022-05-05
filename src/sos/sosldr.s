@@ -479,7 +479,8 @@ ZZORG         =          *
               .IMPORT    DIB3
               .IMPORT    DIB4
 ;
-              .IMPORT    PRTDRIV                                     ; PRINT LOADED DRIVERS 
+              .IMPORT    PRTDRIV                                     ; PRINT LOADED DRIVERS (in bfm.init2)
+              .IMPORT    COPY_SCRH                                   ; COPY SCREENHOLES (in bfm.init2)
 ;
 ;ENTRY I_BASE_P ; USED BY BFM_INIT2  (HARDWIRED!) 
 ;PAGE
@@ -908,6 +909,8 @@ LDR010:       LDA        $380,X
 ;
 ; INITIALIZE SDT TABLE, KERNEL AND PRINT WELCOME MESSAGE 
 ;
+              JSR        COPY_SCRH                                   ; copy over boot card screenholes to internal driver
+
               LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
                                                     ;original sos sets only one drive active (K_DRIVES) for boot
                                                     ;K_DRIVES is now set to 2 to allow booting of either drive (unit)

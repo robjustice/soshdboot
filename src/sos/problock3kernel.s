@@ -48,6 +48,8 @@ ZZORG:
             .EXPORT    DIB3                                  ;DIB3
             .EXPORT    DIB4                                  ;DIB4
 
+            .EXPORT    TmpScrH                               ;Used to copy in card init'd screen holes
+            
             .IMPORT    SYSERR
             .IMPORT    SELC800
             .IMPORT    ALLOCSIR
