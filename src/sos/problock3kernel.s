@@ -322,6 +322,7 @@ DInit:
             bne     FoundCard           ; Yes, skip signature check
 
 CheckSig:
+            jsr     GoSlow              ; set 1MHz, Grappler plus does not like 2M
             lda     DIB1_Slot           ; Check configured slot for autoscan
             bpl     FixedSlot           ; No, use configured DIB1 slot
             lda     #ScanStart          ; else load starting scan slot
@@ -385,11 +386,13 @@ FoundCard:
             bmi     Unit1            
             stx     DIB1_Blks
             sty     DIB1_Blks+1
+            jsr     GoFast
             clc
             rts
 
 Unit1:      stx     DIB2_Blks
             sty     DIB2_Blks+1
+            jsr     GoFast
             clc
             rts
 
