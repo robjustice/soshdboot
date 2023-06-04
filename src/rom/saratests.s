@@ -82,6 +82,8 @@ SETCVH     =    $FBDB
 CLDSTRT    =    $FD98
 SETUP      =    $FD9D
 MONITOR    =    $F901
+SET1MEG    =    $F34C
+MSWAIT     =    $f456
 ;
 ; prodos card block driver addreses
 p_ibcmd    =    $42             ; disk command (=1 for read)
@@ -373,9 +375,8 @@ Signature: .byte $FF, $20, $FF, $00    ; Disk card signature for disk controller
 ;
 ; Hard disk boot
 ;
-HDBOOT:    lda     SYSD1               ; set 1Mhz for better compatibility
-           ora     #$80                ; with the prodos cards.
-           sta     SYSD1
+HDBOOT:    jsr     SET1MEG             ; set 1Mhz for better compatibility
+                                       ; with the prodos cards.
            lda     #ScanStart          ; load starting scan slot (Cs)
            sta     PTRHI
            lda     #$00
@@ -445,8 +446,14 @@ unit0:     ldx     #0                  ;block 0
            lda     #$a0
            sta     p_ibbufp+1
            jsr     pblockio            ;prodos card blockio
-           jmp     BOOTCHK
-            
+           bcc     GOBOOT              ;noerror, go run the bootblock
+                                       ;else lets try the floppy
+           ldy     #0                  ;wait some more for drive to turn off
+wait1:     jsr     MSWAIT              ;helps Fujinet catch when the drive does enable
+           dey
+           bne     wait1
+           jmp     BOOT                ;go boot floppy
+
 pblockio:  jmp     (p_dent)            ;device block entry 
 
 ; pad out so sara test subroutines start from the original address
