@@ -503,13 +503,13 @@ I_PATH2:      .BYTE      $0F
               .BYTE      ".PB2/SOS.INTERP"
               .RES       $18-$10
 
-D_PATH:       .BYTE      $13
-              .BYTE      ".PROFILE/SOS.DRIVER"
-              .RES       $18-$14
-              
-D_PATH2:      .BYTE      $0F
-              .BYTE      ".PB2/SOS.DRIVER"
-              .RES       $18-$10
+D_PATH:       .BYTE      $13                        ;remove later
+              .BYTE      ".PROFILE/SOS.DRIVER"      ;remove later
+              .RES       $18-$14                    ;remove later
+													;remove later
+D_PATH2:      .BYTE      $0F                        ;remove later
+              .BYTE      ".PB2/SOS.DRIVER"          ;remove later
+              .RES       $18-$10                    ;remove later
               
 LDR_ADR:      .WORD      $0
 LDR_CNT:      .WORD      ZZEND-SOSLDR
@@ -714,6 +714,10 @@ LINK          =          *
               STA        FIRST_ADIB+1
               LDA        #0
               STA        CXPAGE+FIRST_ADIB+1
+
+              LDA        MAX_DNUM             ; check if no drivers allocated yet
+              BEQ        FIRST_LINK
+
               LDA        PREVBANK                                    ; BREG:=PREVBANK
               STA        B_REG
               LDY        #0                                          ; (LINK_P):=FIRST_ADIB
@@ -722,7 +726,8 @@ LINK          =          *
               INY
               LDA        FIRST_ADIB+1
               STA        (LINK_P),Y
-              LDA        DSTBANK                                     ; BREG:=DSTBANK
+
+FIRST_LINK:   LDA        DSTBANK                                     ; BREG:=DSTBANK
               STA        B_REG
               LDA        FIRST_ADIB                                  ; LINK_P:=FIRST_ADIB
               STA        LINK_P
@@ -908,26 +913,193 @@ LDR010:       LDA        $380,X
 ;
 ; INITIALIZE SDT TABLE, KERNEL AND PRINT WELCOME MESSAGE 
 ;
-              LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
+      ;;;        LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
                                                     ;original sos sets only one drive active (K_DRIVES) for boot
                                                     ;K_DRIVES is now set to 2 to allow booting of either drive (unit)
-              JSR        LINK_INIT                  ;the link_init sets the last DIB link to zero based on the number of drives
+      ;;;        JSR        LINK_INIT                  ;the link_init sets the last DIB link to zero based on the number of drives
+      ;;;        JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
+      ;;;        JSR        INIT_KRNL                                   ; INIT_KRNL() 
+      ;;;        JSR        WELCOME                                     ; WELCOME() 
+;
+;;;              LDA        E_REG                                       ; ENABLE ROM BANK
+;;;              ORA        #$03
+;;;              STA        E_REG
+;;;              LDA        ROM_ADR                                     ; IF MONITOR ROM <> NEW
+;;;              CMP        #ROM_ID                                     ;    THEN
+;;;              BEQ        LDR020
+;;;              LDX        #ERR7X                                      ;       ERROR("ROM ERROR:  PLEASE NOTIFY YOUR DEALER")
+;;;              LDY        #ERR7L
+;;;              JSR        ERROR
+;;;LDR020:       LDA        E_REG                                       ; DISABLE ROM BANK
+;;;              AND        #$F6
+;;;              STA        E_REG
+
+
+;*************************************************************************************************** 
+; PROCESS DRIVER FILE
+;*************************************************************************************************** 
+;;;;
+;;;; OPEN SOS DRIVER FILE (DEFAULT='SOS.DRIVER')
+;;;;
+;;;              LDY        D_PATH                                      ; OPEN(PATHNAME:=D_PATH 
+;;;LDR080:       LDA        D_PATH,Y                                    ;      REFNUM=OPEN_REF 
+;;;              STA        PATH,Y                                      ;      SYSBUF_P:=80:LDREND-2000 ) 
+;;;              DEY
+;;;              BPL        LDR080
+;;;;
+;;;              BRK
+;;;              .BYTE      OPEN
+;;;              .WORD      OPEN_PARMS
+;;;              BEQ        LDR090
+;;;              LDX        #ERR4X                                      ; ERROR("DRIVER FILE NOT FOUND") 
+;;;              LDY        #ERR4L
+;;;              JSR        ERROR
+;;;LDR090:       LDA        OPEN_REF
+;;;              STA        READ_REF
+;;;              STA        CLOSE_REF
+;;;;
+;;;; READ IN ENTIRE DRIVER FILE INTO BANK 0 
+;;;;
+;;;              BRK                                                    ; READ(REFNUM=READ_REF 
+;;;              .BYTE      READ                                        ;      RDBUF_P:=80:FILE 
+;;;              .WORD      READ_PARMS                                  ;      BYTES=$FFFF-FILE+1 
+;;;;                                       ;      BYTESRD=D.BYTESRD )      
+;;;              BEQ        LDR100
+;;;              LDX        #ERR0X                                      ; ERROR("I/O ERROR") 
+;;;              LDY        #ERR0L
+;;;              JSR        ERROR
+;;;;                                                                                  +---------------+ 
+;;;; CLOSE THE DRIVER FILE AND CHECK LABEL                                            ! SEE FIGURE 3. ! 
+;;;;                                                                                  +---------------+ 
+;;;LDR100:       BRK                                                    ; CLOSE(REFNUM=CLOSE_REF) 
+;;;              .BYTE      CLOSE
+;;;              .WORD      CLOSE_PARMS
+
+; Setup RDBUF_P for our preloaded SOS.DRIVER
+              LDA        #$80                                        ;  
+              STA        CXPAGE+RDBUF_P+1                            ;      RDBUF_P:=80:D_FILE   
+              LDA        #<D_FILE                                    ; 
+              STA        RDBUF_P                                     ; 
+              LDA        #>D_FILE
+              STA        RDBUF_P+1
+			  
+			  LDA        #$00                                        ;setup xbyte for SRC_P & DST_P
+              STA        CXPAGE+DST_P+1
+              LDA        #$80
+              STA        CXPAGE+SRC_P+1
+
+              LDY        #$7                                         ; CHECK LABEL 
+LDR101:       LDA        (RDBUF_P),Y
+              CMP        D_LABEL,Y
+              BNE        LDR102
+              DEY
+              BPL        LDR101
+              BMI        LDR103
+LDR102:       LDX        #ERR5X                                      ; ERROR("INVALID DRIVER FILE")
+              LDY        #ERR5L
+              JSR        ERROR
+			  
+;
+; MOVE CHARACTER SET TABLE 
+;
+LDR103:       LDA        #<D_CHRSET                                  ; MOVE(SRC_P=D_CHRSET DST_P=$C00 A=0 CNT=$400) 
+              STA        SRC_P
+              LDA        #>D_CHRSET
+              STA        SRC_P+1
+              LDA        #<$C00
+              STA        DST_P
+              LDA        #>$C00
+              STA        DST_P+1
+              LDA        #<$400
+              STA        CNT
+              LDA        #>$400
+              STA        CNT+1
+              LDA        #0
+              JSR        MOVE
+;
+; MOVE KEYBOARD TABLE 
+;
+              LDA        #<D_KYBD                                    ; MOVE(SRC_P=D_KYBD DST_P=$1700 A=0 CNT=$100.IN) 
+              STA        SRC_P
+              LDA        #>D_KYBD
+              STA        SRC_P+1
+              LDA        #<$1700
+              STA        DST_P
+              LDA        #>$1700
+              STA        DST_P+1
+              LDA        #<$100
+              STA        CNT
+              LDA        #>$100
+              STA        CNT+1
+              LDA        #0
+              JSR        MOVE
+;   
+; RE-INITIALIZE SDT TABLE 
+;
+  ;;;            LDY        #<(D_DRIVES-D_FILE)                         ; LINK_INIT(A=D_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO) 
+;              LDA        (RDBUF_P),Y 
+  ;;;            LDA        K_DRIVES                          ;hardcode it to K_DRIVES (two)
+  ;;;            JSR        LINK_INIT
+;
+              LDA        #0                                          ; DST_P:=0:I_BASE_P/256*256 
+              STA        CXPAGE+DST_P+1
+              STA        DST_P
+         ;     LDA        I_BASE_P+1
+         ;     STA        DST_P+1
+         ;     CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
+         ;     BCC        LDR105
+         ;     LDA        #$A0
+           ;;;   LDA        #$20      ;hard code to allow full space for interp
+              LDA        #$8C      ;hard code to Selector/// base
+              STA        DST_P+1
+LDR105:       LDA        SYSBANK                                     ; DSTBANK:=SYSBANK
+              STA        DSTBANK
+              JSR        REVERSE                                     ; REVERSE(D_HDR_CNT.IN, WORK_P.OUT)
+;
+; RELOCATE AND MOVE DRIVERS
+;
+NEXTDRIVER:   JSR        DADVANCE                                    ; "NO DRIVERS LEFT":=DADVANCE(WORK_P.IO SRC_P CNT REL_P.OUT) 
+              BCS        LDR140
+              JSR        FLAGS                                       ; "INACTIVE":=FLAGS(SRC_P.IN, PG_ALIGN FIRST_ADIB.OUT) 
+              BVS        NEXTDRIVER
+              JSR        GETMEM                                      ; GETMEM(PG_ALIGN CNT.IN, DST_P DSTBANK DSEGLIST.IO, PREVBANK.OUT)
+              JSR        RELOC                                       ; RELOC(SRC_P REL_P DST_P.IN) 
+;
+              LDA        DSTBANK                                     ; IF DSTBANK < 0 OR DST_P < SRC_P THEN ERROR 
+              BMI        LDR120
+              LDA        CXPAGE+SRC_P+1                              ;    (CONVERT SRC_P TO BANK SWITCHED ADDRESS) 
+              AND        #$7F
+              STA        TEMP_BANK
+              LDA        SRC_P+1
+              BPL        LDR110
+              INC        TEMP_BANK
+LDR110:       AND        #$7F
+              CLC
+              ADC        #>$2000
+              STA        TEMP_ADRH
+              LDA        DST_P                                       ;    (NOW COMPARE)  
+              CMP        SRC_P
+              LDA        DST_P+1
+              SBC        TEMP_ADRH
+              LDA        DSTBANK
+              SBC        TEMP_BANK
+              BCS        LDR130
+LDR120:       LDX        #ERR6X                                      ;    ERROR("DRIVER FILE TOO LARGE") 
+              LDY        #ERR6L
+              JSR        ERROR
+;
+LDR130:       LDA        DSTBANK                                     ; MOVE(SRC_P DST_P A=DSTBANK CNT.IN) 
+              JSR        MOVE
+              JSR        LINK                                        ; LINK(DST_P DSTBANK PREVBANK FIRST_ADIB.IN, SDT_TBL BLKDLST.IO) 
+              JMP        NEXTDRIVER
+
+
+LDR140:
+
               JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
               JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        WELCOME                                     ; WELCOME() 
-;
-              LDA        E_REG                                       ; ENABLE ROM BANK
-              ORA        #$03
-              STA        E_REG
-              LDA        ROM_ADR                                     ; IF MONITOR ROM <> NEW
-              CMP        #ROM_ID                                     ;    THEN
-              BEQ        LDR020
-              LDX        #ERR7X                                      ;       ERROR("ROM ERROR:  PLEASE NOTIFY YOUR DEALER")
-              LDY        #ERR7L
-              JSR        ERROR
-LDR020:       LDA        E_REG                                       ; DISABLE ROM BANK
-              AND        #$F6
-              STA        E_REG
+			  
 ;***************************************************************************************************
 ; PROCESS INTERPRETER FILE 
 ;***************************************************************************************************
@@ -994,7 +1166,8 @@ LDR052:       LDX        #ERR2X                                      ; ERROR("IN
 ;
 ; MOVE INTERPRETER CODE 
 ;
-LDR053:       LDA        #<(I_HDR_CNT-2)                             ; WORK_P:=80:I_HDR_CNT-2 
+LDR053: 
+              LDA        #<(I_HDR_CNT-2)                             ; WORK_P:=80:I_HDR_CNT-2 
               STA        WORK_P
               LDA        #>(I_HDR_CNT-2)
               STA        WORK_P+1
@@ -1026,153 +1199,21 @@ LDR053:       LDA        #<(I_HDR_CNT-2)                             ; WORK_P:=8
 ;
 LDR070:       LDA        SYSBANK                                     ; MOVE(SRC_P=RDBUF_P DST_P A=SYSBANK CNT.IN) 
               JSR        MOVE
-;*************************************************************************************************** 
-; PROCESS DRIVER FILE
-;*************************************************************************************************** 
-;
-; OPEN SOS DRIVER FILE (DEFAULT='SOS.DRIVER')
-;
-              LDY        D_PATH                                      ; OPEN(PATHNAME:=D_PATH 
-LDR080:       LDA        D_PATH,Y                                    ;      REFNUM=OPEN_REF 
-              STA        PATH,Y                                      ;      SYSBUF_P:=80:LDREND-2000 ) 
-              DEY
-              BPL        LDR080
-;
-              BRK
-              .BYTE      OPEN
-              .WORD      OPEN_PARMS
-              BEQ        LDR090
-              LDX        #ERR4X                                      ; ERROR("DRIVER FILE NOT FOUND") 
-              LDY        #ERR4L
-              JSR        ERROR
-LDR090:       LDA        OPEN_REF
-              STA        READ_REF
-              STA        CLOSE_REF
-;
-; READ IN ENTIRE DRIVER FILE INTO BANK 0 
-;
-              BRK                                                    ; READ(REFNUM=READ_REF 
-              .BYTE      READ                                        ;      RDBUF_P:=80:FILE 
-              .WORD      READ_PARMS                                  ;      BYTES=$FFFF-FILE+1 
-;                                       ;      BYTESRD=D.BYTESRD )      
-              BEQ        LDR100
-              LDX        #ERR0X                                      ; ERROR("I/O ERROR") 
-              LDY        #ERR0L
-              JSR        ERROR
-;                                                                                  +---------------+ 
-; CLOSE THE DRIVER FILE AND CHECK LABEL                                            ! SEE FIGURE 3. ! 
-;                                                                                  +---------------+ 
-LDR100:       BRK                                                    ; CLOSE(REFNUM=CLOSE_REF) 
-              .BYTE      CLOSE
-              .WORD      CLOSE_PARMS
-              LDY        #$7                                         ; CHECK LABEL 
-LDR101:       LDA        (RDBUF_P),Y
-              CMP        D_LABEL,Y
-              BNE        LDR102
-              DEY
-              BPL        LDR101
-              BMI        LDR103
-LDR102:       LDX        #ERR5X                                      ; ERROR("INVALID DRIVER FILE")
-              LDY        #ERR5L
-              JSR        ERROR
-;
-; MOVE CHARACTER SET TABLE 
-;
-LDR103:       LDA        #<D_CHRSET                                  ; MOVE(SRC_P=D_CHRSET DST_P=$C00 A=0 CNT=$400) 
-              STA        SRC_P
-              LDA        #>D_CHRSET
-              STA        SRC_P+1
-              LDA        #<$C00
-              STA        DST_P
-              LDA        #>$C00
-              STA        DST_P+1
-              LDA        #<$400
-              STA        CNT
-              LDA        #>$400
-              STA        CNT+1
-              LDA        #0
-              JSR        MOVE
-;
-; MOVE KEYBOARD TABLE 
-;
-              LDA        #<D_KYBD                                    ; MOVE(SRC_P=D_KYBD DST_P=$1700 A=0 CNT=$100.IN) 
-              STA        SRC_P
-              LDA        #>D_KYBD
-              STA        SRC_P+1
-              LDA        #<$1700
-              STA        DST_P
-              LDA        #>$1700
-              STA        DST_P+1
-              LDA        #<$100
-              STA        CNT
-              LDA        #>$100
-              STA        CNT+1
-              LDA        #0
-              JSR        MOVE
-;   
-; RE-INITIALIZE SDT TABLE 
-;
-              LDY        #<(D_DRIVES-D_FILE)                         ; LINK_INIT(A=D_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO) 
-;              LDA        (RDBUF_P),Y 
-              LDA        K_DRIVES                          ;hardcode it to K_DRIVES (two)
-              JSR        LINK_INIT
-;
-              LDA        #0                                          ; DST_P:=0:I_BASE_P/256*256 
-              STA        CXPAGE+DST_P+1
-              STA        DST_P
-              LDA        I_BASE_P+1
-              STA        DST_P+1
-              CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
-              BCC        LDR105
-              LDA        #$A0
-              STA        DST_P+1
-LDR105:       LDA        SYSBANK                                     ; DSTBANK:=SYSBANK
-              STA        DSTBANK
-              JSR        REVERSE                                     ; REVERSE(D_HDR_CNT.IN, WORK_P.OUT)
-;
-; RELOCATE AND MOVE DRIVERS
-;
-NEXTDRIVER:   JSR        DADVANCE                                    ; "NO DRIVERS LEFT":=DADVANCE(WORK_P.IO SRC_P CNT REL_P.OUT) 
-              BCS        LDR140
-              JSR        FLAGS                                       ; "INACTIVE":=FLAGS(SRC_P.IN, PG_ALIGN FIRST_ADIB.OUT) 
-              BVS        NEXTDRIVER
-              JSR        GETMEM                                      ; GETMEM(PG_ALIGN CNT.IN, DST_P DSTBANK DSEGLIST.IO, PREVBANK.OUT)
-              JSR        RELOC                                       ; RELOC(SRC_P REL_P DST_P.IN) 
-;
-              LDA        DSTBANK                                     ; IF DSTBANK < 0 OR DST_P < SRC_P THEN ERROR 
-              BMI        LDR120
-              LDA        CXPAGE+SRC_P+1                              ;    (CONVERT SRC_P TO BANK SWITCHED ADDRESS) 
-              AND        #$7F
-              STA        TEMP_BANK
-              LDA        SRC_P+1
-              BPL        LDR110
-              INC        TEMP_BANK
-LDR110:       AND        #$7F
-              CLC
-              ADC        #>$2000
-              STA        TEMP_ADRH
-              LDA        DST_P                                       ;    (NOW COMPARE)  
-              CMP        SRC_P
-              LDA        DST_P+1
-              SBC        TEMP_ADRH
-              LDA        DSTBANK
-              SBC        TEMP_BANK
-              BCS        LDR130
-LDR120:       LDX        #ERR6X                                      ;    ERROR("DRIVER FILE TOO LARGE") 
-              LDY        #ERR6L
-              JSR        ERROR
-;
-LDR130:       LDA        DSTBANK                                     ; MOVE(SRC_P DST_P A=DSTBANK CNT.IN) 
-              JSR        MOVE
-              JSR        LINK                                        ; LINK(DST_P DSTBANK PREVBANK FIRST_ADIB.IN, SDT_TBL BLKDLST.IO) 
-              JMP        NEXTDRIVER
+
+
+
+
+
+
+
 ;***************************************************************************************************
 ; SETUP USER ENVIRONMENT 
 ;***************************************************************************************************
 ;
 ; RE-INITIALIZE KERNEL/DRIVERS, ALLOCATE SYSTEM SEGMENTS
 ;
-LDR140:       JSR        INIT_KRNL                                   ; INIT_KRNL() 
+  ;;;;LDR140:
+              ;JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        ALLOC_SEG                                   ; ALLOC_SEG(K_BASE I_BASE_P SYSBANK.IN) 
               JSR        ALLOC_DSEG                                  ; ALLOC_DSEG(DSEGLIST.IN) 
 ;
@@ -1909,9 +1950,27 @@ ALDS020:      INY                                                    ; WHILE (Y:
               BCS        ALDS_EXIT
               LDA        DSEGLIST,Y                                  ;       PAGECT:=DSEGLIST(Y) 
               STA        SEGPGCNT
-              BRK                                                    ;       FINDSEG (SRCHMODE=0.IN, SEGID=3.IN
+			  BRK                                                    ;       FINDSEG (SRCHMODE=0.IN, SEGID=3.IN
               .BYTE      FINDSEG                                     ;               PAGECT=DSEGLIST(Y)
               .WORD      SEGMENT1                                    ;               BASE.OUT, LIMIT.OUT)
+
+;;;;ALDS010:      LDY        #$FF                                        ; Y:=-1
+;;;;			  LDX        SYSBANK
+;;;;ALDS020:      DEX                                                    ; SOS.SRIVER loaded one below highest bank
+;;;;              INY                                                    ; WHILE (Y:=Y+1) < DSEGX 
+;;;;              CPY        DSEGX                                       ;    DO 
+;;;;              BCS        ALDS_EXIT
+;;;;              LDA        #$9F
+;;;;			  SEC
+;;;;			  SBC        DSEGLIST,Y                                  ;       PAGECT:=DSEGLIST(Y)
+;;;;              STA        SEGBASE1+1
+;;;;			  STX        SEGBASE1
+;;;;			  STX        SEGLIM1
+;;;;
+;;;;              BRK                                                    ;       FINDSEG (SRCHMODE=0.IN, SEGID=3.IN
+;;;;              .BYTE      REQSEG                                      ;               PAGECT=DSEGLIST(Y)
+;;;;              .WORD      SEGMENT1                                    ;               BASE.OUT, LIMIT.OUT)
+
               JMP        ALDS020
 ;
 ALDS_EXIT:    RTS                                                    ; RETURN 
@@ -2161,6 +2220,18 @@ SEGPGCNT:     .WORD      $0000
               .WORD      $0
               .WORD      $0
               .BYTE      $0
+
+;;;;;for modified memory allocation for drivers
+;;;;SEGMENT1:     .BYTE      $4                                          ; REQ.SEG
+;;;;SEGBASE1:     .BYTE      $0,$0
+;;;;SEGLIM1:      .BYTE      $0,$9f
+;;;;SEGID1:       .BYTE      $1,$0
+;;;;
+;;;;              .BYTE      $0
+;;;;              .BYTE      $0
+
+
+
 ;PAGE
 ;***************************************************************************************************
 ;
@@ -2203,15 +2274,15 @@ SET_UNIT:     LDA        P_UNIT
               LDY        #$17                 ;else copy over the '.PB2' (unit1) paths for the
 SD_LOOP:      LDA        I_PATH2,Y            ;sos.kernel and sos.driver files
               STA        I_PATH,Y
-              LDA        D_PATH2,Y
-              STA        D_PATH,Y
+  ;;;            LDA        D_PATH2,Y
+  ;;;            STA        D_PATH,Y
               DEY
               BPL        SD_LOOP
               
               LDA        #4                   ;copy in the device2 default prefix
               STA        PREFX_PATH
               LDY        #$3                  ;just the '.PB2' part
-PR_LOOP:      LDA        D_PATH2+1,Y
+PR_LOOP:      LDA        I_PATH2+1,Y
               STA        PREFX_PATH+1,Y
               DEY
               BPL        PR_LOOP
@@ -2243,7 +2314,8 @@ I_HDR_CNT     =          I_FILE+$8
 ;***************************************************************************************************
 ; SOS DRIVER FILE
 ;***************************************************************************************************
-D_FILE        =          FILE
+D_FILE        =          $1000     ;FILE      ;hardcode this to be at an even block address
+                                              ;boot block loads SOS.DRIVER into Bank0 3000-9fff & Bank1 2000-9fff
 D_HDR_CNT     =          D_FILE+$8
 D_DRIVES      =          D_HDR_CNT+$2
 D_CHRSET      =          D_DRIVES+$2+$10

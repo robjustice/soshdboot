@@ -138,18 +138,15 @@ CLOSECON:    .BYTE   1
 CLOSEREF:    .BYTE   0
 
 ;
-; LOOK FOR 'CTRL' KEY DOWN, THEN PRINT ALL DRIVERS
+; PRINT ALL DRIVERS LOADED
 ;
 PRTDRIV:     LDA     ENVREG             ;TURN ON CXXX I/O
              PHA                        ;SAVE CURRENT STATE
              ORA     #$40 
              STA     ENVREG
-
-             LDA     KEYBD              ;CHECK IF CTRL KEY IS DOWN
-             AND     #04
-             BEQ     PRINT              ;YES, THEN LETS PRINT THEM
-             PLA                        ;NO, JUST RETURN AND DO NOTHING
-             STA     ENVREG             ;RESTORE ENVIRONMENT
+             JMP     PRINT              ;PRINT DRIVERS LOADED
+             PLA                        ;RESTORE ENVIRONMENT
+             STA     ENVREG
              RTS
 
 ;
@@ -195,6 +192,12 @@ LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              LDA     (POINTER),Y        ;GET NAME LENGTH FROM DIB
              STA     NAMELEN
              TAX
+
+             LDY     #18                ;OFFSET FOR UNIT
+             LDA     (POINTER),Y
+             BNE     SECDEV
+
+PRIMDEV:     LDY #0
 @L1:         INY
              LDA     (POINTER),Y        ;GET THE NAME
              STA     LINE,Y             ;STORE NAME IN CONSOLE WRITE BUFFER
@@ -210,7 +213,28 @@ LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              STA     LINE,Y
              DEX
              BPL     @L2
+             BMI     CONT
 
+SECDEV:      LDA     #$A0               ;PAD SECONDARY DEV ONE SPACE IN
+             STA     LINE+1
+             LDY #0
+@L1:         INY
+             LDA     (POINTER),Y        ;GET THE NAME
+             STA     LINE+1,Y           ;STORE NAME IN CONSOLE WRITE BUFFER
+             DEX
+             BNE     @L1
+
+             LDA     #16                ;ALLOW 16 CHARS FOR NAME
+             CLC
+             SBC     NAMELEN            ;SUBTRACT THE ACTUAL NAME LENGTH
+             TAX
+             LDA     #$A0               ;SO WE CAN PAD THE REST OF THE 16CHARS WITH SPACES
+@L2:         INY
+             STA     LINE+1,Y
+             DEX
+             BPL     @L2
+
+CONT:
 ; GRAB THE OTHER INFO FROM THE DIB AND PRINT AS HEX BYTES
              LDX     #17                ;START IN LINE BUFFER FOR THIS
              LDY     #16                ;DIB OFFSET FOR 'ACTIVE FLAG' (AFTER NAME)
@@ -259,7 +283,6 @@ LOOP:        LDA     SDT_DIBL,X         ;GET POINTER TO DIB FROM SOS DEV TABLE
              BCS     DONE               ;EXIT IF >= MAX_DNUM
              JMP     LOOP
 
-
 DONE:        PLA                        ;RESTORE BANK_REG
              STA     BANK_REG
              LDA     ENVREG             ;TURN ON CXXX I/O
@@ -267,17 +290,18 @@ DONE:        PLA                        ;RESTORE BANK_REG
              ORA     #$40 
              STA     ENVREG
 
-WAIT:        LDA     KEYBD              ;CHECK IF CTRL KEY IS STILL DOWN
-             AND     #04
-             BEQ     WAIT               ;YES, LOOP UNTIL ITS RELEASED
+             LDY     #20                ;DELAY A BIT
+             LDX     #00
+WAIT:        LDA     KEYBD              ;CHECK IF CTRL KEY IS DOWN
+             AND     #04                ;THEN HOLD DRIVER PRINT
+             BEQ     WAIT
+             DEX
+             BNE     WAIT
+             DEY
+             BNE     WAIT
 
              PLA                        ;RESTORE ENVREG
              STA     ENVREG
-
-
-             BRK                        ;CLEAR SCREEN
-             .BYTE   SOS_WRITE
-             .WORD   CLEARCON
 
              BRK                        ;CLOSE CONSOLE
              .BYTE   SOS_CLOSE

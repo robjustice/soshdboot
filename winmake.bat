@@ -36,9 +36,9 @@ call :rom
 goto :EOF
 )
 
-if "%1" equ "disk3" (
+if "%1" equ "drivers" (
 call :md
-call :disk3
+call :drivers
 goto :EOF
 )
 
@@ -55,7 +55,7 @@ call :md
 call :sos
 call :rom
 call :boot
-call :disk3
+call :drivers
 goto :EOF
 )
 
@@ -68,17 +68,17 @@ echo y|1>nul 2>nul rd rom /s
 goto :EOF
 )
 
-echo usage: %0 clean / sos / boot / rom / disk3 / all
+echo usage: %0 clean / sos / boot / rom / drivers / all
 goto :EOF
 
 :md
 2>nul md lst\sos
 2>nul md lst\rom
-2>nul md lst\disk3
+2>nul md lst\drivers
 2>nul md lst\boot
 2>nul md obj\sos
 2>nul md obj\rom
-2>nul md obj\disk3
+2>nul md obj\drivers
 2>nul md obj\boot
 2>nul md out
 2>nul md rom
@@ -121,20 +121,25 @@ rem Assemble Monitor ROM
 %LD65% obj/rom/diskio.o obj/rom/saratests.o obj/rom/monitor.o -o rom/apple3hdboot.rom -C build/apple3.cfg
 goto :EOF
 
-rem Assemble disk3 driver and update SOS.DRIVER file in disk images
-:disk3
-%CA65% src/disk3/disk3.s -l lst/disk3/disk3.lst -o obj/disk3/disk3.o
-%LD65% obj/disk3/disk3.o -o obj/disk3/disk3.o65 -C build/Apple3_o65.cfg
+rem Assemble drivers and update SOS.DRIVER file in disk images
+:drivers
+%CA65% src/drivers/disk3.s -l lst/drivers/disk3.lst -o obj/drivers/disk3.o
+%LD65% obj/drivers/disk3.o -o obj/drivers/disk3.o65 -C build/Apple3_o65.cfg
+%CA65% src/drivers/smartport.s -l lst/drivers/smartport.lst -o obj/drivers/smartport.o
+%LD65% obj/drivers/smartport.o -o obj/drivers/smartport.o65 -C build/Apple3_o65.cfg
 java -jar %AC% -g %DISK% SOS.DRIVER > out/SOS.DRIVER#0c0000
-1>nul %PYTHON% %A3DUTIL% update obj/disk3/disk3.o65 out/SOS.DRIVER#0c0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/disk3.o65 out/SOS.DRIVER#0c0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER#0c0000
 java -jar %AC% -d %DISK% SOS.DRIVER
 java -jar %AC% -p %DISK% SOS.DRIVER SOS $0000 < out/SOS.DRIVER#0c0000
 java -jar %AC% -g %TDMDISK% SOS.DRIVER > out/SOS.DRIVER_TDM#0c0000
-1>nul %PYTHON% %A3DUTIL% update obj/disk3/disk3.o65 out/SOS.DRIVER_TDM#0C0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/disk3.o65 out/SOS.DRIVER_TDM#0C0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER_TDM#0C0000
 java -jar %AC% -d %TDMDISK% SOS.DRIVER
 java -jar %AC% -p %TDMDISK% SOS.DRIVER SOS $0000 < out/SOS.DRIVER_TDM#0C0000
 java -jar %AC% -g %PLDISK% SOS.DRIVER > out/SOS.DRIVER_PL#0c0000
-1>nul %PYTHON% %A3DUTIL% update obj/disk3/disk3.o65 out/SOS.DRIVER_PL#0C0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/disk3.o65 out/SOS.DRIVER_PL#0C0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER_PL#0C0000
 java -jar %AC% -d %PLDISK% SOS.DRIVER
 java -jar %AC% -p %PLDISK% SOS.DRIVER SOS $0000 < out/SOS.DRIVER_PL#0C0000
 goto :EOF

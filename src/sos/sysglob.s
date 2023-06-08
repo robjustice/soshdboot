@@ -231,7 +231,7 @@ NMIEXIT:
               RTS
 ;
 ;
-SOSVER:       .BYTE      "SOS 1.3(PB) 1-JUN-20"                    ;(S) add the (S) to the version
+SOSVER:       .BYTE      "SOS 1.5A1  16-APR-23"                    ;(S) add the (S) to the version
 SOSVERL       =          *-SOSVER
 ;
               .BYTE      "COPYRIGHT APPLE COMPUTER INC.1980-84"   ;(S) and change the last year
