@@ -911,16 +911,20 @@ LDR010:       LDA        $380,X
               LDA        #0                                          ; BREG:=0 
               STA        B_REG
 ;
-; INITIALIZE SDT TABLE, KERNEL AND PRINT WELCOME MESSAGE 
-;
-      ;;;        LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
-                                                    ;original sos sets only one drive active (K_DRIVES) for boot
-                                                    ;K_DRIVES is now set to 2 to allow booting of either drive (unit)
-      ;;;        JSR        LINK_INIT                  ;the link_init sets the last DIB link to zero based on the number of drives
-      ;;;        JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
-      ;;;        JSR        INIT_KRNL                                   ; INIT_KRNL() 
-      ;;;        JSR        WELCOME                                     ; WELCOME() 
-;
+;;;**** we'll do the Kernel init and welcome after we process the drivers
+;;;;
+;;;; INITIALIZE SDT TABLE, KERNEL AND PRINT WELCOME MESSAGE 
+;;;;
+;;;              LDA        K_DRIVES                                    ; LINK_INIT(A=K_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO)
+;;;                                                    ;original sos sets only one drive active (K_DRIVES) for boot
+;;;                                                    ;K_DRIVES is now set to 2 to allow booting of either drive (unit)
+;;;              JSR        LINK_INIT                  ;the link_init sets the last DIB link to zero based on the number of drives
+;;;              JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
+;;;              JSR        INIT_KRNL                                   ; INIT_KRNL() 
+;;;              JSR        WELCOME                                     ; WELCOME() 
+;;;
+;;;**** remove rom check
+;;;
 ;;;              LDA        E_REG                                       ; ENABLE ROM BANK
 ;;;              ORA        #$03
 ;;;              STA        E_REG
@@ -938,6 +942,7 @@ LDR010:       LDA        $380,X
 ;*************************************************************************************************** 
 ; PROCESS DRIVER FILE
 ;*************************************************************************************************** 
+;;;**** boot loader has already loaded it in, no need to do it here
 ;;;;
 ;;;; OPEN SOS DRIVER FILE (DEFAULT='SOS.DRIVER')
 ;;;;
@@ -982,8 +987,8 @@ LDR010:       LDA        $380,X
               STA        RDBUF_P                                     ; 
               LDA        #>D_FILE
               STA        RDBUF_P+1
-			  
-			  LDA        #$00                                        ;setup xbyte for SRC_P & DST_P
+
+              LDA        #$00                                        ;setup xbyte for SRC_P & DST_P
               STA        CXPAGE+DST_P+1
               LDA        #$80
               STA        CXPAGE+SRC_P+1
@@ -998,7 +1003,7 @@ LDR101:       LDA        (RDBUF_P),Y
 LDR102:       LDX        #ERR5X                                      ; ERROR("INVALID DRIVER FILE")
               LDY        #ERR5L
               JSR        ERROR
-			  
+
 ;
 ; MOVE CHARACTER SET TABLE 
 ;
@@ -1036,21 +1041,27 @@ LDR103:       LDA        #<D_CHRSET                                  ; MOVE(SRC_
 ;   
 ; RE-INITIALIZE SDT TABLE 
 ;
-  ;;;            LDY        #<(D_DRIVES-D_FILE)                         ; LINK_INIT(A=D_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO) 
-;              LDA        (RDBUF_P),Y 
-  ;;;            LDA        K_DRIVES                          ;hardcode it to K_DRIVES (two)
-  ;;;            JSR        LINK_INIT
+;;;**** Don't need to play with internal drives, all drivers are in the SOS.DRIVER file now 
+;;;            LDY        #<(D_DRIVES-D_FILE)                         ; LINK_INIT(A=D_DRIVES DIB1..4.IN, SDT_TBL BLKDLST.IO) 
+;;;;           LDA        (RDBUF_P),Y 
+;;;            LDA        K_DRIVES                          ;hardcode it to K_DRIVES (two)
+;;;            JSR        LINK_INIT
 ;
               LDA        #0                                          ; DST_P:=0:I_BASE_P/256*256 
               STA        CXPAGE+DST_P+1
               STA        DST_P
-         ;     LDA        I_BASE_P+1
-         ;     STA        DST_P+1
-         ;     CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
-         ;     BCC        LDR105
-         ;     LDA        #$A0
-           ;;;   LDA        #$20      ;hard code to allow full space for interp
+
+;;;**** Set the starting point for moving the drivers. We don't have visibily for the SOS.INTERP yet so will
+;;;**** just hard code it for Selector/// for now. Something to solve later..
+;;;              LDA        I_BASE_P+1
+;;;              STA        DST_P+1
+;;;              CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
+;;;              BCC        LDR105
+;;;              LDA        #$A0
+;
+;;;              LDA        #$20      ;hard code to allow full space for interp
               LDA        #$8C      ;hard code to Selector/// base
+;
               STA        DST_P+1
 LDR105:       LDA        SYSBANK                                     ; DSTBANK:=SYSBANK
               STA        DSTBANK
@@ -1212,8 +1223,9 @@ LDR070:       LDA        SYSBANK                                     ; MOVE(SRC_
 ;
 ; RE-INITIALIZE KERNEL/DRIVERS, ALLOCATE SYSTEM SEGMENTS
 ;
-  ;;;;LDR140:
-              ;JSR        INIT_KRNL                                   ; INIT_KRNL() 
+;;;**** no need to init the kernel again now
+;;;;LDR140:
+;;;              JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        ALLOC_SEG                                   ; ALLOC_SEG(K_BASE I_BASE_P SYSBANK.IN) 
               JSR        ALLOC_DSEG                                  ; ALLOC_DSEG(DSEGLIST.IN) 
 ;
@@ -1954,6 +1966,8 @@ ALDS020:      INY                                                    ; WHILE (Y:
               .BYTE      FINDSEG                                     ;               PAGECT=DSEGLIST(Y)
               .WORD      SEGMENT1                                    ;               BASE.OUT, LIMIT.OUT)
 
+;;;**** This was for alternate memory allocation if the drive is not immediatle following the interp.
+;;;**** swap out above.
 ;;;;ALDS010:      LDY        #$FF                                        ; Y:=-1
 ;;;;			  LDX        SYSBANK
 ;;;;ALDS020:      DEX                                                    ; SOS.SRIVER loaded one below highest bank
@@ -2221,14 +2235,16 @@ SEGPGCNT:     .WORD      $0000
               .WORD      $0
               .BYTE      $0
 
-;;;;;for modified memory allocation for drivers
-;;;;SEGMENT1:     .BYTE      $4                                          ; REQ.SEG
-;;;;SEGBASE1:     .BYTE      $0,$0
-;;;;SEGLIM1:      .BYTE      $0,$9f
-;;;;SEGID1:       .BYTE      $1,$0
-;;;;
-;;;;              .BYTE      $0
-;;;;              .BYTE      $0
+;;;**** for modified memory allocation for drivers
+;;;**** this was used if the drivers are loaded into a seprate bank to the interp
+;;;**** ie, memory not a continuos run
+;;;SEGMENT1:     .BYTE      $4                                          ; REQ.SEG
+;;;SEGBASE1:     .BYTE      $0,$0
+;;;SEGLIM1:      .BYTE      $0,$9f
+;;;SEGID1:       .BYTE      $1,$0
+;;;
+;;;              .BYTE      $0
+;;;              .BYTE      $0
 
 
 
@@ -2274,8 +2290,9 @@ SET_UNIT:     LDA        P_UNIT
               LDY        #$17                 ;else copy over the '.PB2' (unit1) paths for the
 SD_LOOP:      LDA        I_PATH2,Y            ;sos.kernel and sos.driver files
               STA        I_PATH,Y
-  ;;;            LDA        D_PATH2,Y
-  ;;;            STA        D_PATH,Y
+;;;**** don't need the driver path now
+;;;              LDA        D_PATH2,Y
+;;;              STA        D_PATH,Y
               DEY
               BPL        SD_LOOP
               
