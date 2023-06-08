@@ -509,8 +509,10 @@ D_PATH:       .BYTE      $13                        ;remove later
 													;remove later
 D_PATH2:      .BYTE      $0F                        ;remove later
               .BYTE      ".PB2/SOS.DRIVER"          ;remove later
-              .RES       $18-$10                    ;remove later
-              
+;;;              .RES       $18-$10                    ;remove later
+               .RES $18-$10-5  ;**** this 5 saved bytes is to align the STA MAX_DNUM at $1F65
+                               ;**** Desktop manager is looking at $1F66 to get the address to MAX_DNUM
+			  
 LDR_ADR:      .WORD      $0
 LDR_CNT:      .WORD      ZZEND-SOSLDR
 ;***************************************************************************************************
@@ -614,8 +616,8 @@ DEX
               STA        E_REG                                       ;    ( 1.I.S.R:W_P.R.R ) 
 ;
               LDX        #$FB                                        ; CONSOLE 1.0 MODIFIES STACK DURING D_INIT CALL 
+              TXS
 
-TXS
               LDA        #>CZPAGE                                    ; ZREG:=CALLER'S Z PAGE 
               STA        Z_REG
 ;                                                                    ; +--------------------------------+ 
@@ -633,7 +635,6 @@ TXS
 ;                                                                                                               +---------------+ 
               LDA        SYSBANK                                     ; BREG:=SYSBANK                            ! SEE FIGURE 4. ! 
               STA        B_REG                                       ;                                          +---------------+
-;              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
               JMP        (I_BASE_P)                                  ; SOS LOAD COMPLETE - JMP TO INTERPRETER 
 ;
 ;THE END.
