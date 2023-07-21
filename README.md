@@ -90,6 +90,8 @@ The following disk images are provided prebuilt and ready for use in the disks f
     
     This requires a different boot_loader for tdm and the SOS.DRIVER updated to include the tdm driver.
 
+    Note: tdm uses the highest memory bank exclusively for itself. That means there is less memory available to Applications to run. DrawOn Three will not run with this image with tdm, it needs 512k ram.
+
 - sos_selector_tdm_hd_mouse.po
     
     Same as the 'sos_selector_tdm_hd.po' image with the addition of the mouse driver installed on it.
@@ -125,6 +127,9 @@ I have tested the following cards in combination with real Apple /// hardware
 | Booti | Works great | Works great | My Booti seems to struggle with this combo. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works great | Works great | Works great | works great with all combo's |
 | CFFA v1.3 | Works great | Works great | My CFFA seems to struggle with this combo | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok. I think some sort of init problem, maybe zp|
+| SoftSP/DIYSP | Works great | Works great | Works great | Uses the internal controller, you'll need appropriate cable adapters to connect you device. eg fujinet |
+| Liron | Works great | Works great | Works great | Works nicely for smartport devices |
+| Yellowstone | Not working | N/A | N/A | not working for some reason, to be investigated further |
 
 
 # Build
