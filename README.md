@@ -117,6 +117,24 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
    Same as 'soshdboot.dsk' but with a revised boot_loader installed that works with The Desktop Manager.
 
+# MAME
+
+The mame romset from version 0.225 on includes the soshdboot rom. This can be selected from the command line using the 'bios' option.
+
+Some examples for using the above images with MAME:
+```
+# Boot the sos_selector_hd
+mame apple3 -window -skip_gameinfo -bios soshd -sl4 cffa2 -hard1 sos_selector_hd.po
+
+# Boot the sos_selector_hd with the softcard3 and Titan 3plus2 cards
+mame apple3 -window -skip_gameinfo -bios soshd -sl2 softcard3 -sl3 titan3plus2 -sl4 cffa2 -hard1 sos_selector_hd.po
+
+# Boot the sos_selector_tdm_hd (this one includes the desktop manager, works better with 512k ram)
+mame apple3 -window -skip_gameinfo -bios soshd -ramsize 512k -sl4 cffa2 -hard1 sos_selector_tdm_hd.po
+
+# Boot the sos_selector_hd super quick with the nothrottle option
+mame apple3 -window -skip_gameinfo -bios soshd -nothrottle -sl2 softcard3 -sl3 titan3plus2 -sl4 cffa2 -hard1 sos_selector_hd.po 
+```
 
 # Compatibility
 
@@ -153,7 +171,9 @@ This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update t
 
 I also included my test bat files to launch MAME to test each image, these are in the test folder. You will need to update the MAME path, and create the apple3 folder in MAME's roms folder (and delete/move your apple3.zip file). MAME will throw a warning saying the ROM is incorrect due to the modifed rom, just need to hit a key. 
 
-## One more thing..
+## Extra's
+
+### Titan card Apple II emulation launchers
 
 I have also added some additional support to the Selector /// image for booting the Titan card emulations without the floppy. This was not supported with the standard Selector software. Apparently Titan refused to share the technical details with OnThree (thanks for finding that Jorma).
 
@@ -178,6 +198,16 @@ With either of these we can now boot Prodos from the same harddisk image without
 ![Selector Menu showing Titan options](/images/Titanmenu.jpg)
 
 Finally made some time documenting the patching and support for the ///plus// and ///plus//e interpreter, see here under Titan and Titan2e:
+https://github.com/robjustice/Apple3
+
+### Softcard /// launcher
+
+This allows the Softcard /// CPM to be launched without the boot floppy. It is available under the new 'CPM' menu.
+
+Also included with this is an updated hard disk driver to map the CPM1 & CPM2 files on the soshdboot drive as CPM drives C & D. 
+
+More details and the source code for this are available here under Softcard3:
+
 https://github.com/robjustice/Apple3
 
 # Acknowledgements
