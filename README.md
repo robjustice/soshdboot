@@ -30,10 +30,13 @@ If any key is pressed early/during boot, then the rom will load block0 from unit
 
 To replace the ROM, I have tested two options so far:
 - Use a TMS2532 4k eprom. This is pin compatible and can be placed straight into the A3 motherboard. These can be a bit tricky to program. I made an adapter to swap three pins to make it look like a 2732, and was able to program it that way.
+  
 - Use an adapter like this one. It adapts a standard 2764 EPROM to be able to use in the A3 socket. It is physically a bit high, not to sure if it will fit in the case. It works fine functionally, and we actually get the use 8k of firmware space with this option. (the A3 motherboard supports two 4k rombanks, I'm only using the first 4k bank)
   http://store.go4retro.com/2364-adapter/
+  
 - You can purchase a ready made rom from Joe's Computer Museum shop here:
-  https://jcm-1.com/product/soshdboot/
+  https://jcm-1.com/product/soshdboot
+  
 - Here is a purpose built Apple /// rom adapter design that you can use to make your own:
   https://github.com/ThorstenBr/Apple_III_ROM_Adapter
   
