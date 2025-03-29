@@ -94,7 +94,7 @@ rem Assemble SOS and add SOS.KERNEL to the disk images
 %CA65% src/sos/oprmsg.s -l lst/sos/oprmsg.lst -o obj/sos/oprmsg.o
 %CA65% src/sos/ipl.s -l lst/sos/ipl.lst -o obj/sos/ipl.o
 %CA65% src/sos/umgr.s -l lst/sos/umgr.lst -o obj/sos/umgr.o
-%CA65% src/sos/problock3kernel.s -l lst/sos/problock3kernel.lst -o obj/sos/problock3kernel.o
+%CA65% src/sos/dummydisk3.s -l lst/sos/dummydisk3.lst -o obj/sos/dummydisk3.o
 %CA65% src/sos/syserr.s -l lst/sos/syserr.lst -o obj/sos/syserr.o
 %CA65% src/sos/scmgr.s -l lst/sos/scmgr.lst -o obj/sos/scmgr.o
 %CA65% src/sos/fmgr.s -l lst/sos/fmgr.lst -o obj/sos/fmgr.o
@@ -103,7 +103,7 @@ rem Assemble SOS and add SOS.KERNEL to the disk images
 %CA65% src/sos/bufmgr.s -l lst/sos/bufmgr.lst -o obj/sos/bufmgr.o
 %CA65% src/sos/memmgr.s -l lst/sos/memmgr.lst -o obj/sos/memmgr.o
 %CA65% src/sos/padding.s -l lst/sos/padding.lst -o obj/sos/padding.o
-%LD65% obj/sos/sosldr.o obj/sos/init.o obj/sos/sysglob.o obj/sos/bfm.init2.o obj/sos/bfm.o obj/sos/oprmsg.o obj/sos/ipl.o obj/sos/umgr.o obj/sos/Problock3Kernel.o obj/sos/syserr.o obj/sos/devmgr.o obj/sos/scmgr.o obj/sos/fmgr.o obj/sos/cfmgr.o obj/sos/bufmgr.o obj/sos/memmgr.o obj/sos/padding.o -o out/SOS.KERNEL#0C0000 -C build/apple3.cfg
+%LD65% obj/sos/sosldr.o obj/sos/init.o obj/sos/sysglob.o obj/sos/bfm.init2.o obj/sos/bfm.o obj/sos/oprmsg.o obj/sos/ipl.o obj/sos/umgr.o obj/sos/dummydisk3.o obj/sos/syserr.o obj/sos/devmgr.o obj/sos/scmgr.o obj/sos/fmgr.o obj/sos/cfmgr.o obj/sos/bufmgr.o obj/sos/memmgr.o obj/sos/padding.o -o out/SOS.KERNEL#0C0000 -C build/apple3.cfg
 java -jar %AC% -d %DISK% SOS.KERNEL
 java -jar %AC% -p %DISK% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
 java -jar %AC% -d %TDMDISK% SOS.KERNEL
