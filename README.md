@@ -30,8 +30,15 @@ If any key is pressed early/during boot, then the rom will load block0 from unit
 
 To replace the ROM, I have tested two options so far:
 - Use a TMS2532 4k eprom. This is pin compatible and can be placed straight into the A3 motherboard. These can be a bit tricky to program. I made an adapter to swap three pins to make it look like a 2732, and was able to program it that way.
+  
 - Use an adapter like this one. It adapts a standard 2764 EPROM to be able to use in the A3 socket. It is physically a bit high, not to sure if it will fit in the case. It works fine functionally, and we actually get the use 8k of firmware space with this option. (the A3 motherboard supports two 4k rombanks, I'm only using the first 4k bank)
   http://store.go4retro.com/2364-adapter/
+  
+- You can purchase a ready made rom from Joe's Computer Museum shop here:
+  https://jcm-1.com/product/soshdboot
+  
+- Here is a purpose built Apple /// rom adapter design that you can use to make your own:
+  https://github.com/ThorstenBr/Apple_III_ROM_Adapter
   
 ## Boot loader
   
@@ -90,6 +97,8 @@ The following disk images are provided prebuilt and ready for use in the disks f
     
     This requires a different boot_loader for tdm and the SOS.DRIVER updated to include the tdm driver.
 
+    Note: tdm uses the highest memory bank exclusively for itself. That means there is less memory available to Applications to run. DrawOn Three will not run with this image with tdm, it needs 512k ram.
+
 - sos_selector_tdm_hd_mouse.po
     
     Same as the 'sos_selector_tdm_hd.po' image with the addition of the mouse driver installed on it.
@@ -115,6 +124,24 @@ The following disk images are provided prebuilt and ready for use in the disks f
 
    Same as 'soshdboot.dsk' but with a revised boot_loader installed that works with The Desktop Manager.
 
+# MAME
+
+The mame romset from version 0.225 on includes the soshdboot rom. This can be selected from the command line using the 'bios' option.
+
+Some examples for using the above images with MAME:
+```
+# Boot the sos_selector_hd
+mame apple3 -window -skip_gameinfo -bios soshd -sl4 cffa2 -hard1 sos_selector_hd.po
+
+# Boot the sos_selector_hd with the softcard3 and Titan 3plus2 cards
+mame apple3 -window -skip_gameinfo -bios soshd -sl2 softcard3 -sl3 titan3plus2 -sl4 cffa2 -hard1 sos_selector_hd.po
+
+# Boot the sos_selector_tdm_hd (this one includes the desktop manager, works better with 512k ram)
+mame apple3 -window -skip_gameinfo -bios soshd -ramsize 512k -sl4 cffa2 -hard1 sos_selector_tdm_hd.po
+
+# Boot the sos_selector_hd super quick with the nothrottle option
+mame apple3 -window -skip_gameinfo -bios soshd -nothrottle -sl2 softcard3 -sl3 titan3plus2 -sl4 cffa2 -hard1 sos_selector_hd.po 
+```
 
 # Compatibility
 
@@ -125,6 +152,9 @@ I have tested the following cards in combination with real Apple /// hardware
 | Booti | Works great | Works great | My Booti seems to struggle with this combo. Will boot the floppy ok | Tested with the card set to block mode |
 | CFFA3000 | Works great | Works great | Works great | works great with all combo's |
 | CFFA v1.3 | Works great | Works great | My CFFA seems to struggle with this combo | The CF Card needs to be formatted for Apple2 mode. This means 32mb partitions which are problematic with some SOS apps. Also seems a bit intermittent on boot in slot1, rest seem ok. I think some sort of init problem, maybe zp|
+| SoftSP/DIYSP | Works great | Works great | Works great | Uses the internal controller, you'll need appropriate cable adapters to connect you device. eg fujinet |
+| Liron | Works great | Works great | Works great | Works nicely for smartport devices |
+| Yellowstone | Not working | N/A | N/A | not working for some reason, to be investigated further |
 
 
 # Build
@@ -148,7 +178,9 @@ This will make the SOS.KERNEL, SOS.DRIVER, Bootloaders and ROM and then update t
 
 I also included my test bat files to launch MAME to test each image, these are in the test folder. You will need to update the MAME path, and create the apple3 folder in MAME's roms folder (and delete/move your apple3.zip file). MAME will throw a warning saying the ROM is incorrect due to the modifed rom, just need to hit a key. 
 
-## One more thing..
+## Extra's
+
+### Titan card Apple II emulation launchers
 
 I have also added some additional support to the Selector /// image for booting the Titan card emulations without the floppy. This was not supported with the standard Selector software. Apparently Titan refused to share the technical details with OnThree (thanks for finding that Jorma).
 
@@ -173,6 +205,16 @@ With either of these we can now boot Prodos from the same harddisk image without
 ![Selector Menu showing Titan options](/images/Titanmenu.jpg)
 
 Finally made some time documenting the patching and support for the ///plus// and ///plus//e interpreter, see here under Titan and Titan2e:
+https://github.com/robjustice/Apple3
+
+### Softcard /// launcher
+
+This allows the Softcard /// CPM to be launched without the boot floppy. It is available under the new 'CPM' menu.
+
+Also included with this is an updated hard disk driver to map the CPM1 & CPM2 files on the soshdboot drive as CPM drives C & D. 
+
+More details and the source code for this are available here under Softcard3:
+
 https://github.com/robjustice/Apple3
 
 # Acknowledgements

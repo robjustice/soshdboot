@@ -214,6 +214,30 @@ PRIMDEV:     LDY #0
              DEX
              BPL     @L2
              BMI     CONT
+<<<<<<< HEAD
+=======
+
+SECDEV:      LDA     #'+'               ;PAD SECONDARY DEV IN WITH PLUS SIGN
+             STA     LINE+1
+             LDY #0
+@L1:         INY
+             LDA     (POINTER),Y        ;GET THE NAME
+             STA     LINE+1,Y           ;STORE NAME IN CONSOLE WRITE BUFFER
+             DEX
+             BNE     @L1
+
+             LDA     #16                ;ALLOW 16 CHARS FOR NAME
+             CLC
+             SBC     NAMELEN            ;SUBTRACT THE ACTUAL NAME LENGTH
+             TAX
+             LDA     #$A0               ;SO WE CAN PAD THE REST OF THE 16CHARS WITH SPACES
+@L2:         INY
+             STA     LINE+1,Y
+             DEX
+             BPL     @L2
+
+CONT:
+>>>>>>> origin/master
 
 SECDEV:      LDA     #$A0               ;PAD SECONDARY DEV ONE SPACE IN
              STA     LINE+1
