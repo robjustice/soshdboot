@@ -474,10 +474,11 @@ ZZORG         =          *
               .IMPORT    BFM_INIT2                                   ; BLOCK FILE MANAGER INIT2
               .IMPORT    CLK_INIT                                    ; CLOCK SYSTEM CALL INIT
 ; 
-              .IMPORT    DIB1                                        ; ON BOARD DISK DRIVER'S DIBS (1-4) 
-              .IMPORT    DIB2
-              .IMPORT    DIB3
-              .IMPORT    DIB4
+;;; These are not used, we'll just set dummy values in the declarations below for now to keep things happy
+;;;              .IMPORT    DIB1                                        ; ON BOARD DISK DRIVER'S DIBS (1-4) 
+;;;              .IMPORT    DIB2
+;;;              .IMPORT    DIB3
+;;;              .IMPORT    DIB4
 ;
               .IMPORT    PRTDRIV                                     ; PRINT LOADED DRIVERS 
 ;
@@ -493,7 +494,9 @@ ZZORG         =          *
 K_FILE:       .BYTE      "SOS KRNL"
 K_HDR_CNT:    .WORD      LDR_ADR-K_DRIVES
 K_DRIVES:     .BYTE      $2                             ;update to allow to boot of either unit (drive)
-K_FLAGS:      .BYTE      $0                                          ; RESERVED FOR FUTURE USE 
+K_FLAGS:      .BYTE      $0                             ;reuse this to hold SOS.INTERP load address high byte
+                                                        ; from bootloader                   
+                                                        ;was ; RESERVED FOR FUTURE USE 
 
 I_PATH:       .BYTE      $13
               .BYTE      ".PROFILE/SOS.INTERP"
@@ -503,16 +506,18 @@ I_PATH2:      .BYTE      $0F
               .BYTE      ".PB2/SOS.INTERP"
               .RES       $18-$10
 
-D_PATH:       .BYTE      $13                        ;remove later
-              .BYTE      ".PROFILE/SOS.DRIVER"      ;remove later
-              .RES       $18-$14                    ;remove later
-													;remove later
-D_PATH2:      .BYTE      $0F                        ;remove later
-              .BYTE      ".PB2/SOS.DRIVER"          ;remove later
-;;;              .RES       $18-$10                    ;remove later
-               .RES $18-$10-5  ;**** this 5 saved bytes is to align the STA MAX_DNUM at $1F65
-                               ;**** Desktop manager is looking at $1F66 to get the address to MAX_DNUM
-			  
+;;;D_PATH:       .BYTE      $13                        ;these are not used now
+;;;              .BYTE      ".PROFILE/SOS.DRIVER"      ;
+;;;              .RES       $18-$14                    ;
+;;;													   ;
+;;;D_PATH2:      .BYTE      $0F                        ;
+;;;              .BYTE      ".PB2/SOS.DRIVER"          ;
+;;;              .RES       $18-$10                    ;
+;;;               .RES $18-$10-5  ;**** this 5 saved bytes is to align the STA MAX_DNUM at $1F65
+;;;                               ;**** Desktop manager is looking at $1F66 to get the address to MAX_DNUM
+
+              .RES       $18+$18-5
+
 LDR_ADR:      .WORD      $0
 LDR_CNT:      .WORD      ZZEND-SOSLDR
 ;***************************************************************************************************
@@ -591,6 +596,11 @@ WTEMP         =          ZPAGE+$2F                                   ; WELCOME S
 ;
 P_UNIT        =          $343                                        ; PRODOS BLOCK INTERFACE UNIT
                                                                      ; Need to look at page 3xx as Z_REG is updated
+;
+DIB1          =          0;                                          ; Dummy values for DIBs
+DIB2          =          0;
+DIB3          =          0;
+DIB4          =          0;
 
 ;PAGE
 ;***************************************************************************************************
@@ -765,9 +775,9 @@ LINK100:      LDY        #0                                          ; (LINK_P):
               DEY                                                    ; BREG:=0 
               STY        B_REG
               RTS
-;
-;
-;
+;;;
+;;; Ths is no longer used, left for now as Desktop manager references this to get the MAX_DNUM address
+;;;
 ;
 ; LINK_INIT ( IN:   A=# DRIVES
 ;             IN:   DIB1..4
@@ -777,6 +787,13 @@ LINK100:      LDY        #0                                          ; (LINK_P):
 LINK_INIT     =          *
               JSR        SET_DRIVES                                  ; SET_DRIVES(A=#DRIVES.IN, DIB1..4.IN)
               LDA        #0
+
+;;; check for the correct addess here
+DTM_PEEK      =          *
+              .IF        DTM_PEEK <> $1F65
+              .FATAL     "DTM_PEEK ADDRESS IS INCORRECT IN SOS LOADER"
+              .ENDIF
+
               STA        MAX_DNUM                                    ; MAXDNUM:=0
               STA        BLKDLST                                     ; BLKDLST:=0
               STA        CXPAGE+LINK_P+1                             ; LINK_P:=0:DIB1 
@@ -1052,17 +1069,15 @@ LDR103:       LDA        #<D_CHRSET                                  ; MOVE(SRC_
               STA        CXPAGE+DST_P+1
               STA        DST_P
 
-;;;**** Set the starting point for moving the drivers. We don't have visibily for the SOS.INTERP yet so will
-;;;**** just hard code it for Selector/// for now. Something to solve later..
-;;;              LDA        I_BASE_P+1
-;;;              STA        DST_P+1
-;;;              CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
-;;;              BCC        LDR105
-;;;              LDA        #$A0
-;
-;;;              LDA        #$20      ;hard code to allow full space for interp
-              LDA        #$8C      ;hard code to Selector/// base
-;
+;;;**** Set the starting point for moving the drivers. This value will be set into I_BASE_P+1 by the bootsector/rom code from a peek at
+;;;     the SOS.INTERP file. They read the interpreter's first block and grab the load address high byte from that.
+;;;     This is needed as we are loading in the drivers now before the interpreter.
+;;;            LDA        I_BASE_P+1
+              LDA        K_FLAGS                            ;we'll pass the value via the K_FLAGS byte
+              STA        DST_P+1
+              CMP        #$A0                                        ; IF DST_P>=$A000 THEN DST_P:=$A000   
+              BCC        LDR105
+              LDA        #$A0
               STA        DST_P+1
 LDR105:       LDA        SYSBANK                                     ; DSTBANK:=SYSBANK
               STA        DSTBANK
@@ -1108,7 +1123,13 @@ LDR130:       LDA        DSTBANK                                     ; MOVE(SRC_
 
 LDR140:
 
-              JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
+;;;
+;;; Remove the abilty to set the unit to boot from, not enough space in bootloader for this now
+;;;
+              ;JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
+              NOP
+              NOP
+              NOP
               JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        WELCOME                                     ; WELCOME() 
 			  
@@ -1967,8 +1988,8 @@ ALDS020:      INY                                                    ; WHILE (Y:
               .BYTE      FINDSEG                                     ;               PAGECT=DSEGLIST(Y)
               .WORD      SEGMENT1                                    ;               BASE.OUT, LIMIT.OUT)
 
-;;;**** This was for alternate memory allocation if the drive is not immediatle following the interp.
-;;;**** swap out above.
+;;;**** This was for alternate memory allocation if the drivers are not immediately following the interp.
+;;;**** swap out with above.
 ;;;;ALDS010:      LDY        #$FF                                        ; Y:=-1
 ;;;;			  LDX        SYSBANK
 ;;;;ALDS020:      DEX                                                    ; SOS.SRIVER loaded one below highest bank

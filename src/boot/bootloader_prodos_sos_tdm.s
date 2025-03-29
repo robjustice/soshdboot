@@ -15,12 +15,15 @@
 ;  SOS.DRIVER and SOS.KERNEL files
 ;
 ;     SOS.DRIVER is loaded into Bank0 $3000-9fff & Bank1 $2000-9fff
-;     SOS.KERNEL is loaded into the highest bank from $1E00 onwards
-;  
+;     SOS.KERNEL is loaded into the second highest bank from $1E00 onwards  
+;
+;  This also reads in the first block of the SOS.INTERP file to 
+;  determine the load address and passes this to the sosldr
+;
 ;  - desktopmanager version, load sos one bank lower than highest
 ;     
 ;  This is an attempt to allow any driver to be used for booting
-;  To allow this fit, the error messages have been slimmed down,
+;  To allow this to fit, the error messages have been slimmed down,
 ;   and file validation has been removed 
 ;  
 ;  By Robert Justice
@@ -551,6 +554,7 @@ xblk            =            $11                       ; loc of index block addr
 k_file          =            $1e00                     ; start loc of sos.kernel file
 k_label         =            k_file+0                  ; loc of label in file "sos.kernel"
 k_hdr_cnt       =            k_file+8                  ;   "    header       "
+k_flags         =            k_file+8+3                ; loc of k_flags in sos.kernel
 ;*****************************************************************
 ;*
 ;* sos system boot - entry point
@@ -560,36 +564,7 @@ k_hdr_cnt       =            k_file+8                  ;   "    header       "
 bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
-                jmp          boot+runbase-asmbase
-                .byte        "SOSBOOT 1.5A"            ; sos boot identification "stamp"
 
-;*******************************************************************
-;*
-;* local data storage
-;*
-;*******************************************************************
-
-namlen:         .byte        10
-name_k:         .byte        "SOS.KERNEL"
-name_d:         .byte        "SOS.DRIVER"
-name_offset:    .byte        10                        ;initially set to SOS.DRIVER
-
-;
-; messages
-;
-msg             =            *                         ; message table
-
-msg0:           .byte        "I/O ERR"
-msg0l           =            *-msg0
-xmsg0:          .word        *-msg-1
-
-msg1:           .byte        "FILE NOT FOUND"
-msg1l           =            *-msg1
-xmsg1:          .word        *-msg-1
-
-msg2:           .byte        "INVALID FILE"
-msg2l           =            *-msg2
-xmsg2:          .word        *-msg-1
 
 ;*****************************************************************
 ;*
@@ -685,6 +660,25 @@ rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
                 jsr          rdidxblk                  ; read SOS.KERNEL index block
                 lda          #$1e                      ; read SOS.KERNEL into highest bank, $1e00 on
                 jsr          rddatablks
+
+;
+;  have a peak in the first block of the SOS.INTERP file to get the load address
+;  and update into the sos loader
+;
+                lda          #20                       ; reset offset to point to SOS.INTERP name
+                sta          name_offset
+                jsr          searchdir                 ; search directory for file 'SOS.INTERP'
+                jsr          rdidxblk                  ; read SOS.INTERP index block
+				lda          #0
+				sta          k_xblk+1                  ;we only want the first block, set the 2nd block index to 0
+				sta          k_xblk+256+1
+                lda          #$16                      ; read SOS.INTERP into $1600 
+                jsr          rddatablks
+                lda          $1600+8                   ;check option header length, only checking the low byte for now
+                tax                                    ; either zero, or the length if its there
+                lda          $1600+$0b,x               ;grab the load address
+				sta          k_flags                   ;and use this to set the driver top (start) page
+                                                       ; in the sos loader
 
 ;
 ; build sos loader entry point address
@@ -924,6 +918,36 @@ prnt010:        lda          msg+runbase-asmbase,x
 
                 lda          $c040                     ; sound bell
                 jmp          *+runbase-asmbase         ; hang until reboot (ctrl/reset)
+
+;*******************************************************************
+;*
+;* local data storage
+;*
+;*******************************************************************
+
+namlen:         .byte        10
+name_k:         .byte        "SOS.KERNEL"
+name_d:         .byte        "SOS.DRIVER"
+name_i:         .byte        "SOS.INTERP"
+name_offset:    .byte        10                        ;initially set to SOS.DRIVER
+
+;
+; messages
+;
+msg             =            *                         ; message table
+
+msg0:           .byte        "I/O ERR"
+msg0l           =            *-msg0
+xmsg0:          .word        *-msg-1
+
+msg1:           .byte        "FILE NOT FOUND"
+msg1l           =            *-msg1
+xmsg1:          .word        *-msg-1
+
+msg2:           .byte        "INVALID FILE"
+msg2l           =            *-msg2
+xmsg2:          .word        *-msg-1
+
 
 ;****************************************************************
 ;*
