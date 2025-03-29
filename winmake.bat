@@ -118,7 +118,10 @@ rem Assemble Monitor ROM
 %CA65% src/rom/diskio.s -l lst/rom/diskio.lst -o obj/rom/diskio.o
 %CA65% src/rom/saratests.s -l lst/rom/saratests.lst -o obj/rom/saratests.o
 %CA65% src/rom/monitor.s -l lst/rom/monitor.lst -o obj/rom/monitor.o
+%CA65% src/rom/saratests8k.s -l lst/rom/saratests8k.lst -o obj/rom/saratests8k.o
+%CA65% src/rom/secondbank8k.s -l lst/rom/secondbank8k.lst -o obj/rom/secondbank8k.o
 %LD65% obj/rom/diskio.o obj/rom/saratests.o obj/rom/monitor.o -o rom/apple3hdboot.rom -C build/apple3.cfg
+%LD65% obj/rom/secondbank8k.o obj/rom/diskio.o obj/rom/saratests8k.o obj/rom/monitor.o -o rom/apple3hdboot8k.rom -C build/apple3.cfg
 goto :EOF
 
 rem Assemble drivers and update SOS.DRIVER file in disk images
