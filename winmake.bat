@@ -22,6 +22,7 @@ SET BOOTTDMDISK=disks\soshdboot_tdm.dsk
 SET DISK=disks\sos_selector_hd.po
 SET TDMDISK=disks\sos_selector_tdm_hd.po
 SET PLDISK=disks\plasma_hd.po
+SET DISK2=disks\sos_selector_5mprofile.po
 
 
 if "%1" equ "sos" (
@@ -110,6 +111,8 @@ java -jar %AC% -d %TDMDISK% SOS.KERNEL
 java -jar %AC% -p %TDMDISK% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
 java -jar %AC% -d %PLDISK% SOS.KERNEL
 java -jar %AC% -p %PLDISK% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
+java -jar %AC% -d %DISK2% SOS.KERNEL
+java -jar %AC% -p %DISK2% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
 rem echo off
 goto :EOF
 
@@ -164,5 +167,6 @@ rem Assemble Boot Loaders
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %DISK%
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_tdm_2blk.bin %TDMDISK%
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %PLDISK%
+1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %DISK2%
 goto :EOF
 

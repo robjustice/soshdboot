@@ -10,8 +10,10 @@
 ;    not pressed = boot unit0
 ;    pressed     = boot unit1
 ;
+; - adds support for Profile booting
+;
 ; Updates by Robert Justice
-
+;
 
 ;******************************************************************        
 ;* APPLE /// ROM - DIAGNOSTIC ROUTINES        

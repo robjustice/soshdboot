@@ -498,15 +498,14 @@ K_FLAGS:      .BYTE      $0                             ;reuse this to hold SOS.
                                                         ; from bootloader                   
                                                         ;was ; RESERVED FOR FUTURE USE 
 
-I_PATH:       .BYTE      $13
-              .BYTE      ".PROFILE/SOS.INTERP"
-              .RES       $18-$14
+I_PATH:       .BYTE      $01                            ;to be updated with boot volume name by sos loader
+              .BYTE      "/"                            ; and sos.interp name copied in after it
+              .RES       $20
 
-I_PATH2:      .BYTE      $0F
-              .BYTE      ".PB2/SOS.INTERP"
-              .RES       $18-$10
+I_NAME:       .BYTE      11                             ;interpreter name
+              .BYTE      "/SOS.INTERP"
 
-;;;D_PATH:       .BYTE      $13                        ;these are not used now
+;;;D_PATH:       .BYTE      $13                        ;these are not used now boot loader is loading SOS.DRIVER
 ;;;              .BYTE      ".PROFILE/SOS.DRIVER"      ;
 ;;;              .RES       $18-$14                    ;
 ;;;													   ;
@@ -516,7 +515,9 @@ I_PATH2:      .BYTE      $0F
 ;;;               .RES $18-$10-5  ;**** this 5 saved bytes is to align the STA MAX_DNUM at $1F65
 ;;;                               ;**** Desktop manager is looking at $1F66 to get the address to MAX_DNUM
 
-              .RES       $18+$18-5
+PATH_END:
+PATH_LENGTH = PATH_END - I_PATH
+              .RES       $60-PATH_LENGTH-5             ;sos allocated $60 bytes here, minus the 5 due to additions below
 
 LDR_ADR:      .WORD      $0
 LDR_CNT:      .WORD      ZZEND-SOSLDR
@@ -1122,14 +1123,7 @@ LDR130:       LDA        DSTBANK                                     ; MOVE(SRC_
 
 
 LDR140:
-
-;;;
-;;; Remove the abilty to set the unit to boot from, not enough space in bootloader for this now
-;;;
-              ;JSR        SET_UNIT                   ;set the unit to load the SOS.INTERP & SOS.DRIVER files
-              NOP
-              NOP
-              NOP
+              JSR        SET_PATH                   ;set the SOS.INTERP path based on the boot volume name
               JSR        INIT_KRNL                                   ; INIT_KRNL() 
               JSR        WELCOME                                     ; WELCOME() 
 			  
@@ -2258,7 +2252,7 @@ SEGPGCNT:     .WORD      $0000
               .BYTE      $0
 
 ;;;**** for modified memory allocation for drivers
-;;;**** this was used if the drivers are loaded into a seprate bank to the interp
+;;;**** this was used if the drivers are loaded into a separate bank to the interp
 ;;;**** ie, memory not a continuos run
 ;;;SEGMENT1:     .BYTE      $4                                          ; REQ.SEG
 ;;;SEGBASE1:     .BYTE      $0,$0
@@ -2291,8 +2285,8 @@ SEGID:        .BYTE      $0,$0
 SETPREFIX     =          $C6
 PREFX_PARMS:  .BYTE      $1
               .WORD      PREFX_PATH
-PREFX_PATH:   .BYTE      $8
-              .BYTE      ".PROFILE"
+PREFX_PATH:   .BYTE      $00
+              .BYTE      "/                "            ;allow for 16 char volume name
 ;***************************************************************************************************
 ; GETTIME (TIME.OUT)
 ;***************************************************************************************************
@@ -2303,33 +2297,40 @@ DTPARMS:      .BYTE      1
 DATETIME:     .BYTE      "YYYYMMDDWHHMMSSMMM"
 ;
 ;
-;  SET UNIT TO BOOT FROM BASED ON THE PRODOS UNIT NUMBER THAT LOADED THE KERNEL
+;  SET INTERP PATH & PREFIX TO THE BOOT VOLUME NAME
+;  Then its not a fixed path, but dynamically follows which ever device/unit loaded the sos loader
 ;
-SET_UNIT:     LDA        P_UNIT
-              AND        #$80                 ;Mask of the unit bit
-              BEQ        UNIT0                ;if zero, leave as is and boot from '.PROFILE' (unit0)
+VOLNALEN      =          $A400+4              ;loaded by bootloader here
 
-              LDY        #$17                 ;else copy over the '.PB2' (unit1) paths for the
-SD_LOOP:      LDA        I_PATH2,Y            ;sos.kernel and sos.driver files
+SET_PATH:     
+              LDA        VOLNALEN             ;get boot volume name length from volume directory
+			  AND        #$0F                 ;mask off the storage type
+			  TAY
+			  CLC
+			  ADC        I_PATH               ;add on the volume length
+			  STA        I_PATH
+			  STA        PREFX_PATH
+SP010:        LDA        VOLNALEN,Y            ;copy volume name
+              STA        I_PATH+1,Y           ;to interp path
+			  STA        PREFX_PATH+1,Y       ;and prefix
+              DEY
+              BNE        SP010
+              
+              LDA        I_NAME               ;get interp name length and add to path length
+              TAX
+              ADC        I_PATH
+			  STA        I_PATH
+			  TAY
+SP020:        LDA        I_NAME,X           ;copy interp name to path
               STA        I_PATH,Y
-;;;**** don't need the driver path now
-;;;              LDA        D_PATH2,Y
-;;;              STA        D_PATH,Y
               DEY
-              BPL        SD_LOOP
-              
-              LDA        #4                   ;copy in the device2 default prefix
-              STA        PREFX_PATH
-              LDY        #$3                  ;just the '.PB2' part
-PR_LOOP:      LDA        I_PATH2+1,Y
-              STA        PREFX_PATH+1,Y
-              DEY
-              BPL        PR_LOOP
-              
-UNIT0:        RTS
+			  DEX
+			  BNE        SP020
+        
+              RTS
 
-SU_END        =          *
-SU_LEN        =          SU_END-SET_UNIT
+SP_END        =          *
+SP_LEN        =          SP_END-SET_PATH
 
 ;PAGE
 ;***************************************************************************************************
@@ -2340,7 +2341,7 @@ SU_LEN        =          SU_END-SET_UNIT
 
 codeend       = *
 SLOP          = $28f8 - codeend
-              .RES       SLOP                                        ; +-----------------------------------+ 
+              .RES       SLOP,0                                        ; +-----------------------------------+ 
 INITMODULE:                                                          ;.RES $200 ; ! KERNEL'S INIT MODULE RESIDES HERE ! 
 LDREND        =          *+$200                                      ; +-----------------------------------+ 
 
