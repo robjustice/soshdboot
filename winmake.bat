@@ -156,11 +156,11 @@ rem Assemble Boot Loaders
 :boot
 %CA65% src/boot/bootloader_sos.s -l lst/boot/bootloader_sos.lst -o obj/boot/bootloader_sos.o
 %LD65% obj/boot/bootloader_sos.o -o out/bootloader_1blk.bin -C build/apple3.cfg
-%CA65% src/boot/bootloader_sos_tdm.s -l lst/boot/bootloader_sos_tdm.lst -o obj/boot/bootloader_sos_tdm.o
+%CA65% -D TDM src/boot/bootloader_sos.s -l lst/boot/bootloader_sos_tdm.lst -o obj/boot/bootloader_sos_tdm.o
 %LD65% obj/boot/bootloader_sos_tdm.o -o out/bootloader_tdm_1blk.bin -C build/apple3.cfg
 %CA65% src/boot/bootloader_prodos_sos.s -l lst/boot/bootloader_prodos_sos.lst -o obj/boot/bootloader_prodos_sos.o
 %LD65% obj/boot/bootloader_prodos_sos.o -o out/bootloader_2blk.bin -C build/apple3bs.cfg
-%CA65% src/boot/bootloader_prodos_sos_tdm.s -l lst/boot/bootloader_prodos_sos_tdm.lst -o obj/boot/bootloader_prodos_sos_tdm.o
+%CA65% -D TDM src/boot/bootloader_prodos_sos.s -l lst/boot/bootloader_prodos_sos_tdm.lst -o obj/boot/bootloader_prodos_sos_tdm.o
 %LD65% obj/boot/bootloader_prodos_sos_tdm.o -o out/bootloader_tdm_2blk.bin -C build/apple3bs.cfg
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_1blk.bin %BOOTDISK%
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_tdm_1blk.bin %BOOTTDMDISK%

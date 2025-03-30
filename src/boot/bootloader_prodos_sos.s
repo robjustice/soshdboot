@@ -24,6 +24,9 @@
 ;  To allow this to fit, the error messages have been slimmed down,
 ;   and file validation has been removed 
 ;  
+;  if TDM is defined, builds desktopmanager version, this loads sos
+;  one bank lower than the highest available
+;
 ;  By Robert Justice
 ;
 ;
@@ -537,7 +540,7 @@ sosldr          =            zpage+8                   ; & 9
 
 
 
-;* =  ates
+;* equates
 ;*
 dirblk0         =            $a400
 entry0          =            dirblk0+4                 ; loc of first file entry in directory
@@ -553,6 +556,14 @@ k_file          =            $1e00                     ; start loc of sos.kernel
 k_label         =            k_file+0                  ; loc of label in file "sos.kernel"
 k_hdr_cnt       =            k_file+8                  ;   "    header       "
 k_flags         =            k_file+8+3                ; loc of k_flags in sos.kernel
+
+; highest available bank for 512k ram board
+.ifdef TDM
+highbank        =            13                        ;one lower for desktop manager bootloader 
+.else
+highbank        =            14
+.endif
+
 ;*****************************************************************
 ;*
 ;* sos system boot - entry point
@@ -597,13 +608,13 @@ boot:           sei
 ; find highest memory bank in system and set bank reg to it
 ; - max memsize = 512k. (support OnThree 512k memory card)
 ;
-                lda          #$0e                      ; load highest bank for 512k
+                lda          #highbank                 ; load highest bank for 512k
                 sta          b_reg
                 sta          $2000
-                lda          #$06                      ; highest bank for 256k
+                lda          #highbank-8               ; highest bank for 256k
                 sta          b_reg
                 sta          $2000                     ; will overwrite bank e value if not 512k
-                lda          #$0e
+                lda          #highbank
                 sta          b_reg
                 cmp          $2000
                 beq          boot006                   ; yes, its 512k
@@ -644,7 +655,7 @@ rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
 
 
                 jsr          searchdir                 ; search directory for file 'SOS.DRIVER'
-                jsr          rdidxblk                  ; read SOS.DRIVER index block
+                                                       ;  and read index block
                 lda          #$30                      ; read SOS.DRIVER into bank0, $3000 on
                 jsr          rddatablks
                 pla                                    ; restore high bank
@@ -656,7 +667,7 @@ rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
                 lda          #0                        ; reset offset to point to SOS.KERNEL name
                 sta          name_offset
                 jsr          searchdir                 ; search directory for file 'SOS.KERNEL'
-                jsr          rdidxblk                  ; read SOS.KERNEL index block
+                                                       ;  and read index block
                 lda          #$1e                      ; read SOS.KERNEL into highest bank, $1e00 on
                 jsr          rddatablks
 
@@ -667,7 +678,7 @@ rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
                 lda          #20                       ; reset offset to point to SOS.INTERP name
                 sta          name_offset
                 jsr          searchdir                 ; search directory for file 'SOS.INTERP'
-                jsr          rdidxblk                  ; read SOS.INTERP index block
+                                                       ; and read index block
 				lda          #0
 				sta          k_xblk+1                  ;we only want the first block, set the 2nd block index to 0
 				sta          k_xblk+256+1
@@ -772,7 +783,7 @@ srch030:        lda          (begin),y                 ; do chars match?
                 cmp          #rootdir                  ;skip if stg type=rootdir
                 beq          srch040
 
-                ldx          xmsg2+runbase-asmbase     ;err,invalid file
+                ldx          #xmsg2                    ;err,invalid file
                 ldy          #msg2l
                 jmp          prnt_msg+runbase-asmbase
 
@@ -800,11 +811,12 @@ srch040:        clc
                 dec          blk_ctr
                 bne          search                    ;search the next dir block
 
-                ldx          xmsg1+runbase-asmbase     ;err, can't find file
+                ldx          #xmsg1                    ;err, can't find file
                 ldy          #msg1l
                 jmp          prnt_msg+runbase-asmbase
 
-match:         rts
+match:
+; fall through to read index block
 
 
 ;*******************************************************************
@@ -882,7 +894,7 @@ read_blk        =            *
                 bcs          rd_err
                 rts                                    ; normal exit
 
-rd_err:         ldx          xmsg0+runbase-asmbase     ;err, i/o error
+rd_err:         ldx          #xmsg0                    ;err, i/o error
                 ldy          #msg0l
                 jmp          prnt_msg+runbase-asmbase
                 
@@ -893,25 +905,16 @@ blkio:          jmp          (dent)                    ;device block entry
 ;* print message
 ;*
 ;* input: msg index  (x)
-;*  msg length (y)
+;*        msg length (y)
 ;*******************************************************************
-msgline         =            $5a8                      ; prnt.msg routine
+msgline         =            $5a8+13                    ; prnt.msg routine, hard code text position
+                                                        ;  to save space
 
 prnt_msg        =            *
-                sty          temp                      ; center msg (y:=40-len/2+len)
-                sec
-                lda          #40
-                sbc          temp
-                lsr          a
-                clc
-                adc          temp
-                tay
-
 prnt010:        lda          msg+runbase-asmbase,x
                 sta          msgline-1,y
                 dex
                 dey
-                dec          temp
                 bne          prnt010
 
                 lda          $c040                     ; sound bell
@@ -936,15 +939,15 @@ msg             =            *                         ; message table
 
 msg0:           .byte        "I/O ERR"
 msg0l           =            *-msg0
-xmsg0:          .word        *-msg-1
+xmsg0           =            *-msg-1
 
 msg1:           .byte        "FILE NOT FOUND"
 msg1l           =            *-msg1
-xmsg1:          .word        *-msg-1
+xmsg1           =            *-msg-1
 
 msg2:           .byte        "INVALID FILE"
 msg2l           =            *-msg2
-xmsg2:          .word        *-msg-1
+xmsg2           =            *-msg-1
 
 
 ;****************************************************************

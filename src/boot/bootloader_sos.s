@@ -7,6 +7,9 @@
 ;      not pressed = boot unit0
 ;      pressed     = boot unit1
 ;
+;  if TDM is defined, builds desktopmanager version, this loads sos
+;  one bank lower than the highest available
+;
 ;  By Robert Justice
 ;  
 ;
@@ -103,6 +106,14 @@ xblk            =            $11                       ; loc of index block addr
 k_file          =            $1e00                     ; start loc of sos.kernel file
 k_label         =            k_file+0                  ; loc of label in file "sos.kernel"
 k_hdr_cnt       =            k_file+8                  ;   "    header       "
+
+; highest available bank for 512k ram board
+.ifdef TDM
+highbank        =            13                        ;one lower for desktop manager bootloader 
+.else
+highbank        =            14
+.endif
+
 ;*****************************************************************
 ;*
 ;* sos system boot - entry point
@@ -167,13 +178,13 @@ boot:           sei
 ; find highest memory bank in system and set bank reg to it
 ; - max memsize = 512k. (support OnThree 512k memory card)
 ;
-                lda          #$0e                ; load highest bank for 512k
+                lda          #highbank           ; load highest bank for 512k
                 sta          b_reg
                 sta          $2000
-                lda          #$06                ; highest bank for 256k
+                lda          #highbank-8         ; highest bank for 256k
                 sta          b_reg
                 sta          $2000               ; will overwrite bank e value if not 512k
-                lda          #$0e
+                lda          #highbank
                 sta          b_reg
                 cmp          $2000
                 beq          boot006             ; yes, its 512k
