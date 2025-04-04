@@ -657,7 +657,7 @@ rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
                 inc          ibbufp+1
                 inc          ibbufp+1
                 inc          blknum
-                lda          blknum                      ; have all directory blocks been read?
+                lda          blknum                    ; have all directory blocks been read?
                 cmp          #6
                 bcc          rd_dir                    ; loop if not.    
 
@@ -761,6 +761,8 @@ searchdir:      lda          #<(entry0+runbase-asmbase)   ;get lo byte of addres
                 sta          begin
                 lda          #>(entry0+runbase-asmbase)
                 sta          begin+1
+				lda          #5
+				sta          blk_ctr
 
 search:         clc                                    ; end:=begin+512-entry.len
                 lda          begin+1
@@ -900,7 +902,7 @@ rd_done:        rts
 ;* modified to determine if booted of floppy or prodos card
 ;* and readblock from correct source
 ;*
-;* input: blknum & ibbufp   input: blok & buff
+;* input: blknum & ibbufp
 ;*
 ;*******************************************************************
 
@@ -984,7 +986,7 @@ msg1:           .byte        "FILE NOT FOUND"
 msg1l           =            *-msg1
 xmsg1           =            *-msg-1
 
-msg2:           .byte        "INVALID FILE"
+msg2:           .byte        "FILE ERR"   ;"INVALID FILE"
 msg2l           =            *-msg2
 xmsg2           =            *-msg-1
 

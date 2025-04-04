@@ -106,6 +106,7 @@ xblk            =            $11                       ; loc of index block addr
 k_file          =            $1e00                     ; start loc of sos.kernel file
 k_label         =            k_file+0                  ; loc of label in file "sos.kernel"
 k_hdr_cnt       =            k_file+8                  ;   "    header       "
+k_flags         =            k_file+8+3                ; loc of k_flags in sos.kernel
 
 ; highest available bank for 512k ram board
 .ifdef TDM
@@ -123,27 +124,6 @@ highbank        =            14
 bootinfo        =            *
 asmbase         =            *                         ;assembly base address
 runbase         =            $a000                     ;execution base address
-                jmp          boot
-                .byte        "SOSHDBOOT"        ; sos boot identification "stamp"
-
-;*******************************************************************
-;*
-;* local data storage
-;*
-;*******************************************************************
-
-namlen:         .byte        10
-name:           .byte        "SOS.KERNEL"
-name2:          .byte        "SOS KRNL"
-name2_len       =            *-name2
-;
-; messages - trimmed to save space
-;
-msg0:           .byte        "BOOT ERROR  "
-msg0l           =            *-msg0-1
-
-signature:      .byte        $FF, $20, $FF, $00    ; Disk card signature for disk controller
-                .byte        $FF, $03
 
 
 ;*****************************************************************
@@ -192,6 +172,9 @@ boot:           sei
                 sta          b_reg
                 
                 ldx          #0
+				stx          ptr           ;save some bytes
+				stx          blok+1        ;save some bytes
+                stx          buff          ;save some bytes
 boot005:        dec          b_reg
                 stx          $2000
                 lda          $2000
@@ -201,12 +184,12 @@ boot005:        dec          b_reg
 ;
 boot006:        lda          #scanstart          ; load starting scan slot (cs)
                 sta          ptr+1
-                lda          #$00                
-                sta          ptr
+                ;lda          #$00                
+                ;sta          ptr            ;do above to shave some bytes
 
 checknext:      ldy          #$05                ; we check all 3 sig bytes, starting from last
 chk2:           lda          (ptr),y
-                cmp          signature,y
+                cmp          signature-1,y
                 bne          nomatch             ; no device if bytes don't match
                 dey
                 dey
@@ -246,44 +229,121 @@ sigmatch:       sta          dent                ; Set card driver entry low byt
 
 unit0:          lda          #1
                 sta          blok
-                lda          #0
-                sta          blok+1
-                sta          buff
+                ;lda          #0
+                ;sta          blok+1       ;do above to shave some bytes
+                ;sta          buff         ;do above to shave some bytes
                 lda          #$a2
                 sta          buff+1
 
-                jsr          read_blk  ; rest of boot (block 1)
-
-                inc          blok                    ; first root directory block (block 2)
-                lda          #0
-                sta          blk_ctr
-rd_dir:         inc          buff+1
+rd_dir:         jsr          read_blk            ; rest of boot (block 1)
                 inc          buff+1
-                inc          blk_ctr
-
-                jsr          read_blk  ; root directory
-
-                ldy          #nextdblk                 ; if nextdir field = 0 then done
-                lda          (buff),y
-                sta          blok
-                iny
-                lda          (buff),y
-                sta          blok+1
-                bne          rd_dir
-                lda          blok
-                bne          rd_dir
-
-
-
-;block 1 - part
+                inc          buff+1
+                inc          blok
+				lda          blok                  ; have all directory blocks been read?
+				cmp          #6
+				bcc          rd_dir
 
 ;
-; search directory for file 'sos.kernel'
+; read in SOS.DRIVER file
 ;
-                lda          #<entry0                   ;get lo byte of address
+                lda          b_reg                     ; save high bank
+                pha
+                lda          #0                        ; load SOS.DRIVER into bank0
+                sta          b_reg
+
+
+                jsr          searchdir                 ; search directory for file 'SOS.DRIVER'
+                                                       ;  and read index block
+                lda          #$30                      ; read SOS.DRIVER into bank0, $3000 on
+                jsr          rddatablks
+                pla                                    ; restore high bank
+                sta          b_reg
+
+;
+; read in SOS.KERNEL file
+;
+                lda          #0                        ; reset offset to point to SOS.KERNEL name
+                sta          name_offset
+                jsr          searchdir                 ; search directory for file 'SOS.KERNEL'
+                                                       ;  and read index block
+                lda          #$1e                      ; read SOS.KERNEL into highest bank, $1e00 on
+                jsr          rddatablks
+
+;
+;  have a peak in the first block of the SOS.INTERP file to get the load address
+;  and update into the sos loader
+;
+                lda          #20                       ; reset offset to point to SOS.INTERP name
+                sta          name_offset
+                jsr          searchdir                 ; search directory for file 'SOS.INTERP'
+                                                       ; and read index block
+				lda          #0
+				sta          k_xblk+1                  ;we only want the first block, set the 2nd block index to 0
+				sta          k_xblk+256+1
+                lda          #$16                      ; read SOS.INTERP into $1600 
+                jsr          rddatablks
+                lda          $1600+8                   ;check option header length, only checking the low byte for now
+                tax                                    ; either zero, or the length if its there
+                lda          $1600+$0b,x               ;grab the load address
+				sta          k_flags                   ;and use this to set the driver top (start) page
+                                                       ; in the sos loader
+;
+; build sos loader entry point address
+;
+entry_a3:       clc                                    ; sosldr:=k.hdr.cnt+(k.hdr.cnt)
+                lda          #<(k_hdr_cnt+6+runbase-asmbase)
+                adc          k_hdr_cnt
+                sta          sosldr
+                lda          #>(k_hdr_cnt+6+runbase-asmbase)
+                adc          k_hdr_cnt+1
+                sta          sosldr+1
+;
+; now jump to sos loader (secondary bootstrap)
+;
+                jmp          (sosldr)
+
+;*********************************************************************
+;*
+;* finished !!
+;*
+;* state of registers:
+;*
+;* b reg = highest 32k bank
+;* e reg = $77
+;* z reg = $03
+;*
+;* file "sos.kernel":
+;*
+;* index block is at $c00...$fff
+;* data block 0 is at $2200..$23ff
+;* data block 1 is at $2400..$25ff
+;*  " "
+;* data block n "
+;*
+;* file "sos.driver":
+;*
+;* data block 0 is at bank0:$3000..$31ff
+;* data block 1 is at bank0:$3200..$33ff
+;*  " "
+;* data block n "
+;*
+;*******************************************************************
+
+;*******************************************************************
+;*
+;* search directory for file
+;*
+;* input: 'begin' ptr points to directory entry
+;*        name_offset set 0 or 10 for SOS.KERNEL or SOS.DRIVER
+;*        
+;*******************************************************************
+
+searchdir:      lda          #<(entry0+runbase-asmbase)   ;get lo byte of address
                 sta          begin
-                lda          #>entry0
+                lda          #>(entry0+runbase-asmbase)
                 sta          begin+1
+				lda          #5
+				sta          blk_ctr
 
 search:         clc                                    ; end:=begin+512-entry.len
                 lda          begin+1
@@ -300,13 +360,17 @@ search:         clc                                    ; end:=begin+512-entry.le
 srch020:        ldy          #0                        ; does count match?
                 lda          (begin),y
                 and          #$f
-                cmp          namlen
+                cmp          namlen+runbase-asmbase
                 bne          srch040                   ; no match
 
                 tay
+                clc
+                adc          name_offset               ; offset based on file name to compare
+                tax
 srch030:        lda          (begin),y                 ; do chars match?
-                cmp          name-1              ,y
+                cmp          name_k-1+runbase-asmbase,x
                 bne          srch040                   ; no match
+                dex
                 dey
                 bne          srch030
 
@@ -348,99 +412,68 @@ srch040:        clc
                 lda          #'S'                ; else, error, sos.kernel not found
                 jmp          prnt_msg
 
-;
-; file entry 'sos.kernel' found
-; read in its index block ($c00) and first data block ($1e00)
-;
-match:          ldy          #xblk
+match:
+; fall through to read index block
+
+;*******************************************************************
+;*
+;* read file index block into $0c00
+;*
+;* input: 'begin' ptr points to directory entry
+;*        
+;*******************************************************************
+
+rdidxblk:       ldy          #xblk
                 lda          (begin),y
                 sta          blok
                 iny
                 lda          (begin),y
                 sta          blok+1
-                lda          #<k_xblk                  ;get lo byte of address
+                lda          #<(k_xblk+runbase-asmbase) ;get lo byte of address
                 sta          buff
-                lda          #>k_xblk                  ;get hi byte of address
+                lda          #>(k_xblk+runbase-asmbase) ;get hi byte of address
                 sta          buff+1
-                jsr          read_blk                  ; index block
+                jsr          read_blk+runbase-asmbase  ; index block
+                rts
 
-                lda          #<k_file                  ;get lo byte of address
-                sta          buff
-                lda          #>k_file
-                sta          buff+1
-                lda          k_xblk
-                sta          blok
-                lda          k_xblk+$100
-                sta          blok+1
-                jsr          read_blk                  ; first data block
-;
-; check the label, should be 'sos krnl'
-;
-                ldx          #name2_len-1
-chk010:         lda          k_label,x
-                cmp          name2,x
-                beq          chk020
-                lda          #'B'                ; else, error, bad sos.kernel
-                jmp          prnt_msg
-chk020:         dex
-                bpl          chk010
-;
-; read in the rest of the data blocks in file "sos.kernel"
-;
+;*******************************************************************
+;*
+;* read in file data blocks
+;*
+;* input: a = buffer high byte (assumes buffer low byte always = 0)
+;*        file index block loaded into $0c00
+;*
+;*******************************************************************
+
+rddatablks:     sta          buff+1
                 lda          #0
+                sta          buff
                 sta          temp
 
-data010:        inc          temp
-                inc          buff+1
-                inc          buff+1
-
-                ldx          temp                      ; get block address of next data block
+data010:        ldx          temp                      ; get block address of next data block
                 lda          k_xblk,x
                 sta          blok
                 lda          k_xblk+$100,x
                 sta          blok+1
 
                 lda          blok                      ; is next block address = 0 ?
-                bne          data020
-                lda          blok+1
-                beq          entry_a3                  ; yes, stop reading
+                ora          blok+1 
+                beq          rd_done                   ; yes, stop reading
 
-data020:        jsr          read_blk                  ; read data block
-                jmp          data010                   ;  and repeat
-;
-; build sos loader entry point address
-;
-entry_a3:       clc                                    ; sosldr:=k.hdr.cnt+(k.hdr.cnt)
-                lda          #<(k_hdr_cnt+6)
-                adc          k_hdr_cnt
-                sta          sosldr
-                lda          #>(k_hdr_cnt+6)
-                adc          k_hdr_cnt+1
-                sta          sosldr+1
-;
-; now jump to sos loader (secondary bootstrap)
-;
-                jmp          (sosldr)
+data020:        jsr          read_blk+runbase-asmbase  ; read data block
+                inc          temp                      ; bump for next time
+                inc          buff+1
+                inc          buff+1
 
-;*********************************************************************
-;*
-;* finished !!
-;*
-;* state of registers:
-;*
-;* b reg = highest 32k bank
-;* e reg = $77
-;* z reg = $03
-;*
-;* file "sos.kernel":
-;*
-;* index block is at $c00...$fff
-;* data block 0 is at $2200..$23ff
-;* data block 1 is at $2400..$25ff
-;*  " "
-;* data block n "
-;*
-;*******************************************************************
+                lda          buff+1                    ; if its loading the driver file wrap
+                cmp          #$a0                      ; to bank1 if we are past the end of bank0
+                bne          data010
+                lda          #$20
+                sta          buff+1
+                inc          b_reg
+                bne          data010                   ; bra always
+
+rd_done:        rts
 
 ;*******************************************************************
 ;*
@@ -471,7 +504,7 @@ blockio:        jmp          (dent)                    ;device block entry
 ;*******************************************************************
 msgline         =            $5a8                      ; prnt.msg routine
 
-prnt_msg:       sta          msg0+msg0l                ; store the error letter
+prnt_msg:       sta          a:msg0+msg0l                ; store the error letter
                 ldy          #msg0l
 
 prnt010:        lda          msg0,y                    ; copy the message to screen
@@ -481,6 +514,28 @@ prnt010:        lda          msg0,y                    ; copy the message to scr
 
                 lda          $c040                     ; sound bell
                 jmp          *                         ; hang until reboot (ctrl/reset)
+
+;*******************************************************************
+;*
+;* local data storage
+;*
+;*******************************************************************
+
+namlen:         .byte        10
+name_k:         .byte        "SOS.KERNEL"
+name_d:         .byte        "SOS.DRIVER"
+name_i:         .byte        "SOS.INTERP"
+name_offset:    .byte        10                        ;initially set to SOS.DRIVER
+
+;
+; messages - trimmed to save space
+;
+msg0:           .byte        " ERROR  "
+msg0l           =            *-msg0-1
+
+signature:      .byte        $20, $FF, $00    ; Disk card signature for disk controller
+                .byte        $FF, $03
+
 
 ;****************************************************************
 ;*
