@@ -140,7 +140,7 @@ entry1:         stx          unit                      ;save unit number.
 
 isdsk2:         sta          trktmp                    ;make sure previous track =0
                 sta          dent                      ;and dent points at beginning of slot
-                ldy          #$63                      ;move code from card to ram
+                ldy          #$5e                      ;move code from card to ram
 mvboot:         lda          (dent),y
                 sta          zzstart-$5e,y
                 iny
