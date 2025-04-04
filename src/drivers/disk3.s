@@ -763,7 +763,7 @@ SIORET:     LDX        #0                                    ; SAY OK TO MOUSE
 ;***************************************************************************************************
 ;
 FINDSECT:
-            LDA        #R_FIND*$16                            ;SETUP NUMBER OF REVS
+            LDA        #R_FIND*16                            ;SETUP NUMBER OF REVS
             STA        RETRYADR                              ; ALLOWED TO FIND SECTOR
             LSR        TEMP                                  ;COMPUTE LATENCY FIRST TIME THRU
 FINDSEC2:

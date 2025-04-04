@@ -91,7 +91,25 @@ kernel          =            $2000
 xboot:          .byte        $01                       ;(prodos boot id)
 entry:          sec                                    ;(apple iii enters xboot 'ora $38')
                 bcs          entry1                    ;branch if not apple iii native mode.
-                jmp          goapl3                    ;go do apple iii boot!
+
+                lda          #$9f                      ;the return address is $a000 for a3
+                pha
+                lda          #$ff
+                pha
+
+                lda          dent+1                    ; check if we are doing a3 floppy
+                and          #$f8                      ; or block mode card
+                cmp          #$c0
+                beq          blockcard                 ; go do floppy read
+
+                lda          #1                        ;read block 1.
+                ldx          #0
+                jmp          blockio                   ;using Apple3 rom (floppy)
+
+blockcard:      lda          #$a0                      ;update load buffer address to $a000
+                sta          buff+1
+                inc          blok                      ;read block 1.
+                jmp          (dent)                    ;using Prodos block mode card
 
 entry1:         stx          unit                      ;save unit number.
                 cmp          #$03                      ;for disk ii.
@@ -251,15 +269,6 @@ endcode         =            *
                 rts
                 jmp          seek
 
-goapl3          =            *+$9800
-                lda          #$9f                      ;make apple iii boot using block 1.
-                pha                                    ;(the return address is $a000)
-                lda          #$ff
-                pha
-                inc          blok                      ;read block 1.
-                nop
-                jmp          (dent)
-
 ;
 quitmes:        jsr          clrscrn                   ;clear video.
                 ldy          #meslen                   ;print message centered on screen.
@@ -269,8 +278,8 @@ prmess:         lda          errmess,y
                 bpl          prmess
 hang:           jmp          hang
 ;
-meslen          =            28
-errmess:        ascmsbon     "*** UNABLE TO LOAD PRODOS  ***"
+meslen          =            27
+errmess:        ascmsbon     "**  UNABLE TO LOAD PRODOS  **"
 
 setphase:       lda          curtrk                    ;get current track
 clrphase:       and          #3                        ;mask for 1 of 4 phases
@@ -362,17 +371,20 @@ rddata:         php                                    ;carry set if reading sec
 rd0:            dey                                    ;every time y=0 decrement find count.
                 beq          tryread
 
+                .segment "DATA2"
+
 zzstart         =            *
 ; from zzstart to zzend code is moved from
 ; rom and modified to match this code...
+;
+; zzstart must equal to $A00, so the above code length needs to ensure this
+;  ie. more than can fit in the boot block
+                .if        zzstart <> $a00
+                .fatal     "zzstart not equal to $A00"
+                .endif
 
-rd1:            lda          q6l,x                     ;read a byet from the state machine.
+rd1:            lda          q6l,x                     ;read a byte from the state machine.
                 bpl          rd1                       ;loop until ready.
-
-;                dsect
-                .segment "DATA2"
-                .org         zzstart+5                 ;equivalent to org *
-
 rd1a:           eor          #$d5                      ;mark 1?
 mod1            =            <(*-zzstart+1)
                 bne          rd0                       ;branch if not.
@@ -468,7 +480,7 @@ goseek:         jmp          seek
 
 ;                dend
                 .segment     "DATA"
-                .res         $a00-zzstart-5,0
+;                .res         $a00-zzstart-5,0
 
 
 ; the following is the apple /// sos boot loader.
@@ -517,7 +529,6 @@ goseek:         jmp          seek
                 .segment     "DATA"
                 .org         $a000
 
-
 ;*
 ;* hardware addresses
 ;*
@@ -525,20 +536,25 @@ e_reg           =            $ffdf
 b_reg           =            $ffef
 kybdstrb        =            $c010
 
+;* 
+;* monitor data and addresses 
+;* 
+ibcmd           =            $87 
+ibbufp          =            $85 
+blockio         =            $f479
 
 ;*
 ;* zero page storage (z reg = $03)
 ;*
 
 zpage           =            $e0
+blknum          =            zpage+0                   ; & 1
 begin           =            zpage+2                   ; & 3
 end             =            zpage+4                   ; & 5
 blk_ctr         =            zpage+6
 temp            =            zpage+7
 
 sosldr          =            zpage+8                   ; & 9
-
-
 
 ;* equates
 ;*
@@ -630,18 +646,18 @@ boot005:        dec          b_reg
 ; read in blocks 1 thru n (rest of boot and all of root dir.)
 ;
 boot006:        lda          #1
-                sta          blok
+                sta          blknum
                 lda          #0
-                sta          blok+1
-                sta          buff
+                sta          blknum+1
+                sta          ibbufp
                 lda          #$a2
-                sta          buff+1
+                sta          ibbufp+1
 
 rd_dir:         jsr          read_blk+runbase-asmbase  ; rest of boot (block 1)
-                inc          buff+1
-                inc          buff+1
-                inc          blok
-                lda          blok                      ; have all directory blocks been read?
+                inc          ibbufp+1
+                inc          ibbufp+1
+                inc          blknum
+                lda          blknum                      ; have all directory blocks been read?
                 cmp          #6
                 bcc          rd_dir                    ; loop if not.    
 
@@ -818,7 +834,6 @@ srch040:        clc
 match:
 ; fall through to read index block
 
-
 ;*******************************************************************
 ;*
 ;* read file index block into $0c00
@@ -829,14 +844,14 @@ match:
 
 rdidxblk:       ldy          #xblk
                 lda          (begin),y
-                sta          blok
+                sta          blknum
                 iny
                 lda          (begin),y
-                sta          blok+1
+                sta          blknum+1
                 lda          #<(k_xblk+runbase-asmbase) ;get lo byte of address
-                sta          buff
+                sta          ibbufp
                 lda          #>(k_xblk+runbase-asmbase) ;get hi byte of address
-                sta          buff+1
+                sta          ibbufp+1
                 jsr          read_blk+runbase-asmbase  ; index block
                 rts
 
@@ -849,31 +864,31 @@ rdidxblk:       ldy          #xblk
 ;*
 ;*******************************************************************
 
-rddatablks:     sta          buff+1
+rddatablks:     sta          ibbufp+1
                 lda          #0
-                sta          buff
+                sta          ibbufp
                 sta          temp
 
 data010:        ldx          temp                      ; get block address of next data block
                 lda          k_xblk,x
-                sta          blok
+                sta          blknum
                 lda          k_xblk+$100,x
-                sta          blok+1
+                sta          blknum+1
 
-                lda          blok                      ; is next block address = 0 ?
-                ora          blok+1 
+                lda          blknum                      ; is next block address = 0 ?
+                ora          blknum+1 
                 beq          rd_done                   ; yes, stop reading
 
 data020:        jsr          read_blk+runbase-asmbase  ; read data block
                 inc          temp                      ; bump for next time
-                inc          buff+1
-                inc          buff+1
+                inc          ibbufp+1
+                inc          ibbufp+1
 
-                lda          buff+1                    ; if its loading the driver file wrap
+                lda          ibbufp+1                    ; if its loading the driver file wrap
                 cmp          #$a0                      ; to bank1 if we are past the end of bank0
                 bne          data010
                 lda          #$20
-                sta          buff+1
+                sta          ibbufp+1
                 inc          b_reg
                 bne          data010                   ; bra always
 
@@ -882,17 +897,41 @@ rd_done:        rts
 ;*******************************************************************
 ;*
 ;* read block routine
+;* modified to determine if booted of floppy or prodos card
+;* and readblock from correct source
 ;*
-;* input: blok & buff
+;* input: blknum & ibbufp   input: blok & buff
 ;*
 ;*******************************************************************
 
 read_blk        =            *
-                lda          #1
-                sta          dcmd                      ; read
+                ldx          #1                        ; read cmd
+				lda          dent+1                    ; check if we are doing floppy
+                and          #$f8                      ; or block mode card
+                cmp          #$c0
+                bne          doblkio                   ; go do floppy read
+                                                       ; else do block mode card
+                stx          dcmd                      ; read
+
+                lda          ibbufp
+                sta          buff
+                lda          ibbufp+1
+                sta          buff+1
+                lda          blknum
+                sta          blok
+                lda          blknum+1
+                sta          blok+1
+
                 jsr          blkio
                 bcs          rd_err
                 rts                                    ; normal exit
+
+doblkio:        stx          ibcmd
+                lda          blknum
+                ldx          blknum+1
+                jsr          blockio
+                bcs          rd_err
+                rts
 
 rd_err:         ldx          #xmsg0                    ;err, i/o error
                 ldy          #msg0l

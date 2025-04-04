@@ -391,4 +391,3 @@ PADDING      =         $400-ZZLEN
              .IF       $400-LENBFMI
              .FATAL    "SOSORG FILE IS INCORRECT FOR BFM.INIT2"
              .ENDIF
-

@@ -1125,8 +1125,59 @@ LDR130:       LDA        DSTBANK                                     ; MOVE(SRC_
 LDR140:
               JSR        SET_PATH                   ;set the SOS.INTERP path based on the boot volume name
               JSR        INIT_KRNL                                   ; INIT_KRNL() 
+;;; do this after charset loading, nto stop the char growth
+;;; down side is it takes a bit longer till the Welcome screen comes up now
+;              JSR        WELCOME                                     ; WELCOME() 
+;;;
+;;;
+;;;           LDA        #0                                          ; TURN VIDEO OFF - PREVENTS CHAR "GROWTH" DURING DOWNLOAD 
+;;;           STA        SCRNMODE
+;;;
+;;; charset loading moved to before loading the sos interpreter to stop floppy driver
+;;; interupts affecting the loading
+;     
+; LAUNCH CHARACTER SET DOWNLOAD (CONSOLE) AND CLEAR SCREEN 
+;
+              CLI                                                    ; BEGIN CHARACTER SET DOWNLOAD (CONSOLE) 
+;
+;;; no need to clear the screens, will do this when we print the drivers out
+;;;              LDA        #0                                          ; CLEAR TEXT SCREENS 
+;;;              STA        CXPAGE+SRC_P+1
+;;;              STA        CXPAGE+DST_P+1
+;;;              LDA        #$04
+;;;              STA        SRC_P+1
+;;;              STA        DST_P+1
+;;;              LDA        #$00
+;;;              STA        SRC_P
+;;;              LDA        #$80
+;;;              STA        DST_P
+;;;              LDA        #$A0
+;;;              LDX        #8
+;;;CLEAR0:       LDY        #$77
+;;;CLEAR1:       STA        (SRC_P),Y
+;;;              STA        (DST_P),Y
+;;;              DEY
+;;;              BPL        CLEAR1
+;;;              INC        SRC_P+1                                     ; NEXT PAGE
+;;;              INC        DST_P+1                                     ; NEXT PAGE
+;;;              DEX
+;;;              BNE        CLEAR0
+;
+;;; need to check if this really needs to be this long
+              LDA        #$00
+              STA        SRC_P
+              LDX        #0
+WAIT:         INC        SRC_P                                       ; WAIT FOR DOWNLOAD TO COMPLETE 
+              BNE        WAIT
+              INX
+              BNE        WAIT
+;
+;              LDA        #$80                                        ; TURN VIDEO ON 
+;              STA        SCRNMODE
+;;; print the welcome screen after we load the charset
               JSR        WELCOME                                     ; WELCOME() 
-			  
+
+
 ;***************************************************************************************************
 ; PROCESS INTERPRETER FILE 
 ;***************************************************************************************************
@@ -1227,12 +1278,6 @@ LDR053:
 LDR070:       LDA        SYSBANK                                     ; MOVE(SRC_P=RDBUF_P DST_P A=SYSBANK CNT.IN) 
               JSR        MOVE
 
-
-
-
-
-
-
 ;***************************************************************************************************
 ; SETUP USER ENVIRONMENT 
 ;***************************************************************************************************
@@ -1247,49 +1292,14 @@ LDR070:       LDA        SYSBANK                                     ; MOVE(SRC_
 ;
 ; SET PREFIX TO THE BOOT VOLUME
 ;
-              LDA        #0                                          ; TURN VIDEO OFF - PREVENTS CHAR "GROWTH" DURING DOWNLOAD 
-              STA        SCRNMODE
-              BRK                                                    ; SET.PREFIX(PREFIXPATH=".D1") 
+              BRK                                                    ; SET.PREFIX(PREFIXPATH="/<BOOT VOLUME NAME>") 
               .BYTE      SETPREFIX
               .WORD      PREFX_PARMS
-;     
-; LAUNCH CHARACTER SET DOWNLOAD (CONSOLE) AND CLEAR SCREEN 
-;
-              CLI                                                    ; BEGIN CHARACTER SET DOWNLOAD (CONSOLE) 
-;
-              LDA        #0                                          ; CLEAR TEXT SCREENS 
-              STA        CXPAGE+SRC_P+1
-              STA        CXPAGE+DST_P+1
-              LDA        #$04
-              STA        SRC_P+1
-              STA        DST_P+1
-              LDA        #$00
-              STA        SRC_P
-              LDA        #$80
-              STA        DST_P
-              LDA        #$A0
-              LDX        #8
-CLEAR0:       LDY        #$77
-CLEAR1:       STA        (SRC_P),Y
-              STA        (DST_P),Y
-              DEY
-              BPL        CLEAR1
-              INC        SRC_P+1                                     ; NEXT PAGE
-              INC        DST_P+1                                     ; NEXT PAGE
-              DEX
-              BNE        CLEAR0
-;
-WAIT:         INC        SRC_P                                       ; WAIT FOR DOWNLOAD TO COMPLETE 
-              BNE        WAIT
-              INX
-              BNE        WAIT
-;
-              LDA        #$80                                        ; TURN VIDEO ON 
-              STA        SCRNMODE
 
-              JSR        PRTDRIV                  ;Go see if we want to print the loaded drivers
+              JSR        PRTDRIV                  ;Go print the loaded drivers, uses .CONSOLE
 
               RTS
+
 ;***************************************************************************************************
 ;PAGE
 ;***************************************************************************************************
