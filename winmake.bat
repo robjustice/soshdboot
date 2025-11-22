@@ -23,6 +23,7 @@ SET DISK=disks\sos_selector_hd.po
 SET TDMDISK=disks\sos_selector_tdm_hd.po
 SET PLDISK=disks\plasma_hd.po
 SET DISK2=disks\sos_selector_5mprofile.po
+SET BASICDISK=disks\businessbasic.po
 
 
 if "%1" equ "sos" (
@@ -113,6 +114,8 @@ java -jar %AC% -d %PLDISK% SOS.KERNEL
 java -jar %AC% -p %PLDISK% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
 java -jar %AC% -d %DISK2% SOS.KERNEL
 java -jar %AC% -p %DISK2% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
+java -jar %AC% -d %BASICDISK% SOS.KERNEL
+java -jar %AC% -p %BASICDISK% SOS.KERNEL SOS $0000 < out/SOS.KERNEL#0C0000
 rem echo off
 goto :EOF
 
@@ -148,6 +151,16 @@ java -jar %AC% -g %PLDISK% SOS.DRIVER > out/SOS.DRIVER_PL#0c0000
 1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER_PL#0C0000
 java -jar %AC% -d %PLDISK% SOS.DRIVER
 java -jar %AC% -p %PLDISK% SOS.DRIVER SOS $0000 < out/SOS.DRIVER_PL#0C0000
+java -jar %AC% -g %DISK2% SOS.DRIVER > out/SOS.DRIVER_P#0c0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/disk3.o65 out/SOS.DRIVER_P#0C0000
+REM 1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER_P#0C0000
+java -jar %AC% -d %DISK2% SOS.DRIVER
+java -jar %AC% -p %DISK2% SOS.DRIVER SOS $0000 < out/SOS.DRIVER_P#0C0000
+java -jar %AC% -g %BASICDISK% SOS.DRIVER > out/SOS.DRIVER_B#0c0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/disk3.o65 out/SOS.DRIVER_B#0C0000
+1>nul %PYTHON% %A3DUTIL% update obj/drivers/smartport.o65 out/SOS.DRIVER_B#0C0000
+java -jar %AC% -d %BASICDISK% SOS.DRIVER
+java -jar %AC% -p %BASICDISK% SOS.DRIVER SOS $0000 < out/SOS.DRIVER_B#0C0000
 goto :EOF
 
 PLASMADISK
@@ -168,5 +181,6 @@ rem Assemble Boot Loaders
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_tdm_2blk.bin %TDMDISK%
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %PLDISK%
 1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %DISK2%
+1>nul %PYTHON% %BOOTLOADER% out\bootloader_2blk.bin %BASICDISK%
 goto :EOF
 

@@ -144,7 +144,13 @@ PRTDRIV:     LDA     ENVREG             ;TURN ON CXXX I/O
              PHA                        ;SAVE CURRENT STATE
              ORA     #$40 
              STA     ENVREG
-             JMP     PRINT              ;PRINT DRIVERS LOADED
+
+;             JMP     PRINT              ;PRINT DRIVERS LOADED
+
+             LDA     KEYBD              ;CHECK IF CTRL KEY IS DOWN
+             AND     #04
+             BEQ     PRINT              ;YES, THEN LETS PRINT THEM
+
              PLA                        ;RESTORE ENVIRONMENT
              STA     ENVREG
              RTS
@@ -290,15 +296,15 @@ DONE:        PLA                        ;RESTORE BANK_REG
              ORA     #$40 
              STA     ENVREG
 
-             LDY     #40                ;DELAY A BIT
-             LDX     #00
+;             LDY     #40                ;DELAY A BIT
+;             LDX     #00
 WAIT:        LDA     KEYBD              ;CHECK IF CTRL KEY IS DOWN
              AND     #04                ;THEN HOLD DRIVER PRINT
              BEQ     WAIT
-             DEX
-             BNE     WAIT
-             DEY
-             BNE     WAIT
+;             DEX
+;             BNE     WAIT
+;             DEY
+;             BNE     WAIT
 
              PLA                        ;RESTORE ENVREG
              STA     ENVREG
